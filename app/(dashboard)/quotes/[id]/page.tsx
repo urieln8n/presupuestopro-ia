@@ -1,6 +1,6 @@
 "use client";
 
-import {use, useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
 type QuoteItem = {
@@ -28,8 +28,7 @@ type QuoteDetail = {
     email: string | null;
     address: string | null;
     city: string | null;
-
-} | null;
+  } | null;
   quote_items: QuoteItem[];
 };
 
@@ -86,12 +85,17 @@ export default function QuoteDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-    const { id } = use(params);
+  const { id } = use(params);
 
   const [quote, setQuote] = useState<QuoteDetail | null>(null);
-const [isLoading, setIsLoading] = useState(true);
-const [errorMessage, setErrorMessage] = useState("");
-const [businessSettings, setBusinessSettings] = useState<BusinessSettings | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [businessSettings, setBusinessSettings] =
+    useState<BusinessSettings | null>(null);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [editMessage, setEditMessage] = useState("");
 
   async function loadQuote() {
     try {
@@ -137,16 +141,15 @@ const [businessSettings, setBusinessSettings] = useState<BusinessSettings | null
 
       setQuote(data as unknown as QuoteDetail);
 
-const { data: settingsData } = await supabase
-  .from("business_settings")
-  .select("*")
-  .limit(1)
-  .single();
+      const { data: settingsData } = await supabase
+        .from("business_settings")
+        .select("*")
+        .limit(1)
+        .single();
 
-if (settingsData) {
-  setBusinessSettings(settingsData as BusinessSettings);
-}
-
+      if (settingsData) {
+        setBusinessSettings(settingsData as BusinessSettings);
+      }
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -175,6 +178,53 @@ if (settingsData) {
       ...quote,
       status,
     });
+  }
+
+  function updateQuoteField(
+    field: "title" | "description" | "estimated_price" | "whatsapp_message",
+    value: string
+  ) {
+    if (!quote) return;
+
+    setQuote({
+      ...quote,
+      [field]: field === "estimated_price" ? Number(value) : value,
+    });
+  }
+
+  async function saveEditedQuote() {
+    if (!quote) return;
+
+    try {
+      setIsSavingEdit(true);
+      setEditMessage("");
+      setErrorMessage("");
+
+      const { error } = await supabase
+        .from("quotes")
+        .update({
+          title: quote.title,
+          description: quote.description,
+          estimated_price: quote.estimated_price,
+          whatsapp_message: quote.whatsapp_message,
+        })
+        .eq("id", quote.id);
+
+      if (error) {
+        throw error;
+      }
+
+      setEditMessage("Presupuesto actualizado correctamente.");
+      setIsEditing(false);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Error actualizando presupuesto"
+      );
+    } finally {
+      setIsSavingEdit(false);
+    }
   }
 
   useEffect(() => {
@@ -206,94 +256,161 @@ if (settingsData) {
     `Hola, te envío el presupuesto: ${quote.title || "Presupuesto"}`;
 
   return (
-  <main className="print-page min-h-screen bg-zinc-50 p-6">
+    <main className="print-page min-h-screen bg-zinc-50 p-6">
       <div className="mx-auto max-w-5xl">
         <div className="no-print mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
             <a href="/quotes" className="text-sm font-semibold text-zinc-500">
               ← Volver al historial
             </a>
-            <h1 className="mt-2 text-4xl font-black">Detalle del presupuesto</h1>
+            <h1 className="mt-2 text-4xl font-black">
+              Detalle del presupuesto
+            </h1>
           </div>
 
           <div className="flex flex-wrap gap-3">
-  <button
-    onClick={() => window.print()}
-    className="rounded-2xl bg-zinc-950 px-5 py-3 font-semibold text-white"
-  >
-    Descargar PDF
-  </button>
+            <button
+              type="button"
+              onClick={() => setIsEditing(!isEditing)}
+              className="rounded-2xl border px-5 py-3 font-semibold"
+            >
+              {isEditing ? "Cancelar edición" : "Editar presupuesto"}
+            </button>
 
-  <button
-    onClick={() => updateStatus("pending")}
-    className="rounded-2xl border px-5 py-3 font-semibold"
-  >
-    Pendiente
-  </button>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="rounded-2xl bg-zinc-950 px-5 py-3 font-semibold text-white"
+            >
+              Descargar PDF
+            </button>
 
-  <button
-    onClick={() => updateStatus("accepted")}
-    className="rounded-2xl bg-green-600 px-5 py-3 font-semibold text-white"
-  >
-    Aceptado
-  </button>
+            <button
+              type="button"
+              onClick={() => updateStatus("pending")}
+              className="rounded-2xl border px-5 py-3 font-semibold"
+            >
+              Pendiente
+            </button>
 
-  <button
-    onClick={() => updateStatus("rejected")}
-    className="rounded-2xl bg-red-600 px-5 py-3 font-semibold text-white"
-  >
-    Rechazado
-  </button>
-</div>
+            <button
+              type="button"
+              onClick={() => updateStatus("accepted")}
+              className="rounded-2xl bg-green-600 px-5 py-3 font-semibold text-white"
+            >
+              Aceptado
+            </button>
+
+            <button
+              type="button"
+              onClick={() => updateStatus("rejected")}
+              className="rounded-2xl bg-red-600 px-5 py-3 font-semibold text-white"
+            >
+              Rechazado
+            </button>
+          </div>
         </div>
 
+        {errorMessage && (
+          <div className="no-print mb-6 rounded-3xl border border-red-200 bg-red-50 p-6 text-red-700">
+            {errorMessage}
+          </div>
+        )}
+
+        {editMessage && (
+          <div className="no-print mb-6 rounded-3xl border border-green-200 bg-green-50 p-6 text-green-700">
+            {editMessage}
+          </div>
+        )}
+
         <section className="print-area print-compact rounded-3xl bg-white p-8 shadow-sm">
-          <div className="flex flex-col justify-between gap-6 border-b pb-6 md:flex-row">
-            <div>
-             <p className="text-sm font-bold uppercase tracking-widest text-zinc-400">
-  {businessSettings?.company_name || "PresupuestoPro IA"}
-</p>
-<div className="mt-2 text-sm text-zinc-500">
-  {businessSettings?.owner_name && <p>{businessSettings.owner_name}</p>}
-  {businessSettings?.phone && <p>Tel: {businessSettings.phone}</p>}
-  {businessSettings?.email && <p>Email: {businessSettings.email}</p>}
-  {businessSettings?.city && <p>{businessSettings.city}</p>}
-  {businessSettings?.address && <p>{businessSettings.address}</p>}
-</div>
-
-<p className="mt-2 text-sm text-zinc-500">
-  Presupuesto generado para servicios de reformas, terminación de obra y limpieza profesional.
-</p>
-
-              <h2 className="mt-3 text-3xl font-black">
-                {quote.title || "Presupuesto sin título"}
-              </h2>
-
-<div className="mt-4 grid gap-2 text-sm text-zinc-500 md:grid-cols-3">
-  <p>
-    <strong>Nº presupuesto:</strong>{" "}
-    {formatQuoteNumber(quote.id, quote.created_at)}
-  </p>
-
-  <p>
-    <strong>Fecha:</strong> {formatDate(quote.created_at)}
-  </p>
-
-  <p>
-    <strong>Validez:</strong> 7 días
-  </p>
-</div>
-
-              <p className="mt-4 max-w-3xl leading-7 text-zinc-600">
-                {quote.description || "Sin descripción"}
+          <div className="print-avoid-break flex flex-col justify-between gap-6 border-b pb-6 md:flex-row">
+            <div className="w-full">
+              <p className="text-sm font-bold uppercase tracking-widest text-zinc-400">
+                {businessSettings?.company_name || "PresupuestoPro IA"}
               </p>
+
+              <div className="mt-2 text-sm text-zinc-500">
+                {businessSettings?.owner_name && (
+                  <p>{businessSettings.owner_name}</p>
+                )}
+                {businessSettings?.phone && <p>Tel: {businessSettings.phone}</p>}
+                {businessSettings?.email && (
+                  <p>Email: {businessSettings.email}</p>
+                )}
+                {businessSettings?.city && <p>{businessSettings.city}</p>}
+                {businessSettings?.address && <p>{businessSettings.address}</p>}
+              </div>
+
+              <p className="mt-3 text-sm text-zinc-500">
+                Presupuesto generado para servicios de reformas, terminación de
+                obra y limpieza profesional.
+              </p>
+
+              {isEditing ? (
+                <input
+                  className="mt-3 w-full rounded-2xl border px-4 py-3 text-2xl font-black"
+                  value={quote.title || ""}
+                  onChange={(event) =>
+                    updateQuoteField("title", event.target.value)
+                  }
+                />
+              ) : (
+                <h2 className="mt-3 text-3xl font-black">
+                  {quote.title || "Presupuesto sin título"}
+                </h2>
+              )}
+
+              <div className="mt-4 grid gap-3 text-sm text-zinc-500 md:grid-cols-3">
+                <p className="break-words">
+                  <strong>Nº presupuesto:</strong>{" "}
+                  <span className="whitespace-nowrap">
+                    {formatQuoteNumber(quote.id, quote.created_at)}
+                  </span>
+                </p>
+
+                <p>
+                  <strong>Fecha:</strong> {formatDate(quote.created_at)}
+                </p>
+
+                <p>
+                  <strong>Validez:</strong> 7 días
+                </p>
+              </div>
+
+              {isEditing ? (
+                <textarea
+                  className="mt-4 w-full rounded-2xl border px-4 py-3 leading-7"
+                  rows={4}
+                  value={quote.description || ""}
+                  onChange={(event) =>
+                    updateQuoteField("description", event.target.value)
+                  }
+                />
+              ) : (
+                <p className="mt-4 max-w-3xl leading-7 text-zinc-600">
+                  {quote.description || "Sin descripción"}
+                </p>
+              )}
             </div>
 
             <div className="rounded-3xl bg-zinc-50 p-5 md:min-w-60">
               <p className="text-sm text-zinc-500">Total estimado</p>
-              <p className="mt-2 text-4xl font-black">
-                {formatCurrency(quote.estimated_price)}
-              </p>
+
+              {isEditing ? (
+                <input
+                  type="number"
+                  className="mt-2 w-full rounded-2xl border px-4 py-3 text-3xl font-black"
+                  value={quote.estimated_price || 0}
+                  onChange={(event) =>
+                    updateQuoteField("estimated_price", event.target.value)
+                  }
+                />
+              ) : (
+                <p className="mt-2 text-4xl font-black">
+                  {formatCurrency(quote.estimated_price)}
+                </p>
+              )}
 
               <p className="mt-3 text-sm font-semibold">
                 Estado: {formatStatus(quote.status)}
@@ -315,8 +432,7 @@ if (settingsData) {
                   {quote.clients?.phone || "Sin teléfono"}
                 </p>
                 <p>
-                  <strong>Email:</strong>{" "}
-                  {quote.clients?.email || "Sin email"}
+                  <strong>Email:</strong> {quote.clients?.email || "Sin email"}
                 </p>
                 <p>
                   <strong>Ciudad:</strong>{" "}
@@ -330,7 +446,7 @@ if (settingsData) {
             </div>
 
             <div className="no-print rounded-3xl bg-zinc-50 p-5">
-  <h3 className="text-xl font-bold">Acciones</h3>
+              <h3 className="text-xl font-bold">Acciones</h3>
 
               <div className="mt-4 flex flex-col gap-3">
                 <button
@@ -342,7 +458,10 @@ if (settingsData) {
                 </button>
 
                 <a
-                  href={createWhatsAppLink(quote.clients?.phone, whatsappMessage)}
+                  href={createWhatsAppLink(
+                    quote.clients?.phone,
+                    whatsappMessage
+                  )}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="rounded-2xl bg-green-600 px-5 py-3 text-center font-semibold text-white"
@@ -354,6 +473,7 @@ if (settingsData) {
           </div>
 
           <div className="print-avoid-break mt-8">
+            <h3 className="text-xl font-bold">Partidas</h3>
 
             <div className="mt-4 space-y-3">
               {quote.quote_items.length === 0 && (
@@ -381,16 +501,38 @@ if (settingsData) {
           <div className="no-print mt-8 rounded-3xl bg-zinc-50 p-5">
             <h3 className="text-xl font-bold">Mensaje para WhatsApp</h3>
 
-            <p className="mt-4 whitespace-pre-line leading-7 text-zinc-600">
-              {whatsappMessage}
-            </p>
+            {isEditing ? (
+              <textarea
+                className="mt-4 w-full rounded-2xl border px-4 py-3 leading-7"
+                rows={5}
+                value={quote.whatsapp_message || ""}
+                onChange={(event) =>
+                  updateQuoteField("whatsapp_message", event.target.value)
+                }
+              />
+            ) : (
+              <p className="mt-4 whitespace-pre-line leading-7 text-zinc-600">
+                {whatsappMessage}
+              </p>
+            )}
+
+            {isEditing && (
+              <button
+                type="button"
+                onClick={saveEditedQuote}
+                disabled={isSavingEdit}
+                className="mt-4 rounded-2xl bg-zinc-950 px-5 py-3 font-semibold text-white disabled:opacity-60"
+              >
+                {isSavingEdit ? "Guardando cambios..." : "Guardar cambios"}
+              </button>
+            )}
           </div>
 
-         <p className="mt-6 text-sm text-zinc-500">
-  Nota:{" "}
-  {businessSettings?.legal_note ||
-    "El precio indicado es una estimación basada en la información facilitada. Puede ajustarse tras visita técnica o cambios en el alcance del trabajo."}
-</p>
+          <p className="mt-6 text-sm text-zinc-500">
+            Nota:{" "}
+            {businessSettings?.legal_note ||
+              "El precio indicado es una estimación basada en la información facilitada. Puede ajustarse tras visita técnica o cambios en el alcance del trabajo."}
+          </p>
         </section>
       </div>
     </main>

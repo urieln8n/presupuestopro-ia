@@ -91,6 +91,8 @@ export default function NewQuotePage() {
   const [saveMessage, setSaveMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 const [savedQuoteId, setSavedQuoteId] = useState("");
+const [isGenerating, setIsGenerating] = useState(false);
+
 
   const squareMeters = Number(job.squareMeters) || 0;
 
@@ -151,103 +153,92 @@ const [savedQuoteId, setSavedQuoteId] = useState("");
     }));
   }
 
-  function generateQuote() {
+  async function generateQuote() {
+  try {
+    setIsGenerating(true);
     setSaveMessage("");
     setErrorMessage("");
+    setSavedQuoteId("");
 
-    const clientName = client.name || "cliente";
-    const metersText = squareMeters > 0 ? `${squareMeters} m²` : "el espacio";
-
-    let title = "";
-    let summary = "";
-    let items: GeneratedQuote["items"] = [];
-
-    if (quoteType === "reform") {
-      title = `Presupuesto de reforma / terminación de obra para ${clientName}`;
-
-      summary = `Propuesta para realizar trabajos de reforma o terminación de obra en ${metersText}. El presupuesto incluye mano de obra estimada, revisión del estado actual y condiciones básicas del servicio.`;
-
-      items = [
-        {
-          name: "Trabajo de reforma / terminación",
-          description: "Mano de obra, preparación y ejecución del servicio.",
-          total: estimatedPrice,
-        },
-      ];
+    if (!client.name.trim()) {
+      throw new Error("Añade el nombre del cliente antes de generar el presupuesto.");
     }
 
-    if (quoteType === "cleaning") {
-      title = `Presupuesto de limpieza profesional para ${clientName}`;
+    const fallbackTitle = `Presupuesto de ${
+      quoteType === "reform"
+        ? "reforma / terminación de obra"
+        : quoteType === "cleaning"
+        ? "limpieza profesional"
+        : "reforma y limpieza post obra"
+    } para ${client.name}`;
 
-      summary = `Propuesta para limpieza profesional en ${metersText}. Incluye limpieza general, tratamiento de zonas principales y preparación del espacio según el estado indicado.`;
+    const response = await fetch("/api/generate-quote", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        quoteType,
+        client,
+        job,
+        estimatedPrice,
+        squareMeters,
+      }),
+    });
 
-      items = [
-        {
-          name: "Servicio de limpieza profesional",
-          description:
-            "Limpieza general, baños, cocina, superficies y zonas principales.",
-          total: estimatedPrice,
-        },
-      ];
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "No se pudo generar el presupuesto con IA.");
     }
 
-    if (quoteType === "combined") {
-      const combined = calculateCombinedPrice({
-        reform: {
-          workType: job.workType,
-          squareMeters,
-          materialsIncluded: job.materialsIncluded,
-          urgencyLevel: job.urgencyLevel,
-          difficulty: job.difficulty,
-        },
-        cleaning: {
-          cleaningType: job.cleaningType,
-          squareMeters,
-          hasConstructionResidue: job.hasConstructionResidue,
-          windowsIncluded: job.windowsIncluded,
-          terraceIncluded: job.terraceIncluded,
-          urgencyLevel: job.urgencyLevel,
-        },
-      });
-
-      title = `Presupuesto de reforma y limpieza post obra para ${clientName}`;
-
-      summary = `Propuesta combinada para trabajos de reforma o terminación de obra y limpieza posterior en ${metersText}. El presupuesto se divide en bloque de reforma y bloque de limpieza final.`;
-
-      items = [
-        {
-          name: "Reforma / terminación de obra",
-          description: "Trabajos principales de obra, acabados o reparación.",
-          total: combined.reformPrice,
-        },
-        {
-          name: "Limpieza post obra",
-          description:
-            "Limpieza profunda posterior al trabajo, eliminación de polvo y preparación del espacio.",
-          total: combined.cleaningPrice,
-        },
-      ];
-    }
-
-    const whatsappMessage = `Hola ${clientName}, te envío el presupuesto: ${title}.
-
-Importe estimado: ${formatCurrency(estimatedPrice)}
-
-Resumen:
-${summary}
-
-El precio puede ajustarse tras visita técnica o cambios en el alcance del trabajo.
-
-¿Te gustaría que coordinemos una visita o confirmemos los detalles?`;
+    const items = Array.isArray(data.items)
+      ? data.items.map(
+          (item: {
+            name?: string;
+            description?: string;
+            total?: number;
+          }) => ({
+            name: item.name || "Partida",
+            description: item.description || "",
+            total: Number(item.total || 0),
+          })
+        )
+      : [];
 
     setGeneratedQuote({
-      title,
-      summary,
-      price: estimatedPrice,
-      whatsappMessage,
-      items,
+      title: data.title || fallbackTitle,
+      summary:
+        data.summary ||
+        "Propuesta profesional generada a partir de los datos facilitados.",
+      price: Number(data.final_price || estimatedPrice),
+      whatsappMessage:
+        data.whatsapp_message ||
+        `Hola ${client.name}, te envío el presupuesto. Importe estimado: ${formatCurrency(
+          estimatedPrice
+        )}.`,
+      items:
+        items.length > 0
+          ? items
+          : [
+              {
+                name: "Servicio presupuestado",
+                description:
+                  "Trabajo calculado según los datos facilitados.",
+                total: estimatedPrice,
+              },
+            ],
     });
+  } catch (error) {
+    setErrorMessage(
+      error instanceof Error
+        ? error.message
+        : "Error generando presupuesto con IA"
+    );
+  } finally {
+    setIsGenerating(false);
   }
+}
 
   async function saveQuote() {
     try {
@@ -635,12 +626,19 @@ setSaveMessage("Presupuesto guardado correctamente.");
           </div>
 
           <button
-            type="button"
-            onClick={generateQuote}
-            className="mt-6 w-full rounded-2xl bg-zinc-950 px-5 py-4 font-semibold text-white"
-          >
-            Generar presupuesto en pantalla
-          </button>
+  type="button"
+  onClick={generateQuote}
+  disabled={isGenerating}
+  className="mt-6 w-full rounded-2xl bg-zinc-950 px-5 py-4 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+>
+  {isGenerating ? "Generando con IA..." : "Generar presupuesto con IA"}
+</button>
+
+{errorMessage && (
+  <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+    {errorMessage}
+  </div>
+)}
         </section>
 
         {generatedQuote && (
