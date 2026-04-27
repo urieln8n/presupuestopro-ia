@@ -21,36 +21,34 @@ export default function RegisterPage() {
         throw new Error("Añade el nombre del negocio.");
       }
 
-      const { data, error } = await supabase.auth.signUp({
+      if (!ownerName.trim()) {
+        throw new Error("Añade el nombre del responsable.");
+      }
+
+      if (!email.trim()) {
+        throw new Error("Añade un email.");
+      }
+
+      if (password.length < 6) {
+        throw new Error("La contraseña debe tener al menos 6 caracteres.");
+      }
+
+      const { error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            company_name: companyName,
+            owner_name: ownerName,
+          },
+        },
       });
 
       if (error) {
         throw error;
       }
 
-      const userId = data.user?.id;
-
-      if (!userId) {
-        throw new Error("No se pudo crear el usuario.");
-      }
-
-      const { error: settingsError } = await supabase
-  .from("business_settings")
-  .insert({
-    id_usuario: userId,
-    company_name: companyName,
-    owner_name: ownerName,
-    email,
-  });
-
-if (settingsError) {
-  console.error("Error creando business_settings:", settingsError);
-  throw new Error(settingsError.message);
-}
-
-window.location.href = "/dashboard";
+      window.location.href = "/dashboard";
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Error creando cuenta"
@@ -108,7 +106,7 @@ window.location.href = "/dashboard";
             type="button"
             onClick={register}
             disabled={isLoading}
-            className="w-full rounded-2xl bg-zinc-950 px-4 py-3 font-semibold text-white disabled:opacity-60"
+            className="w-full rounded-2xl bg-zinc-950 px-4 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isLoading ? "Creando cuenta..." : "Crear cuenta"}
           </button>
