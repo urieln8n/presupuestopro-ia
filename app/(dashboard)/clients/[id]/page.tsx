@@ -246,6 +246,13 @@ export default function ClientDetailPage({
               Crear presupuesto
             </a>
 
+<a
+  href={`/clients/${client.id}/edit`}
+  className="rounded-2xl border px-5 py-3 text-center font-semibold"
+>
+  Editar cliente
+</a>
+
             <a
               href={createWhatsAppLink(client.phone)}
               target="_blank"
