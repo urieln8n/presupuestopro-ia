@@ -10,6 +10,8 @@ type QuoteRow = {
   estimated_price: number | null;
   status: string | null;
   quote_type: string;
+  template_id: string | null;
+template_name: string | null;
   created_at: string;
   clients: {
     name: string | null;
@@ -68,6 +70,8 @@ if (userError || !user) {
           estimated_price,
           status,
           quote_type,
+          template_id,
+          template_name,
           created_at,
           clients (
             name,
@@ -173,7 +177,7 @@ if (userError || !user) {
                 </div>
 
                 <p className="text-sm font-semibold">
-                  {formatQuoteType(quote.quote_type)}
+                  {quote.template_name || formatQuoteType(quote.quote_type)}
                 </p>
 
                 <p className="text-sm font-semibold">

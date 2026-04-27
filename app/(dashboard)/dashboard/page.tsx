@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase/client";
 import { LogoutButton } from "@/components/auth/logout-button";
 
 type QuoteRow = {
+  template_name: any;
   id: string;
   title: string | null;
   estimated_price: number | null;
@@ -59,6 +60,7 @@ export default function DashboardPage() {
           estimated_price,
           status,
           quote_type,
+          template_name,
           created_at,
           clients (
             name
@@ -141,7 +143,7 @@ export default function DashboardPage() {
             >
               Crear presupuesto
             </a>
-            
+
             <LogoutButton />
           </div>
         </div>
@@ -218,9 +220,15 @@ export default function DashboardPage() {
                     <p className="font-bold">
                       {quote.title || "Presupuesto sin título"}
                     </p>
-                    <p className="text-sm text-zinc-500">
-                      {quote.clients?.name || "Cliente sin nombre"}
-                    </p>
+                   <p className="text-sm text-zinc-500">
+  {quote.clients?.name || "Cliente sin nombre"}
+</p>
+
+{quote.template_name && (
+  <p className="text-xs font-semibold text-zinc-400">
+    {quote.template_name}
+  </p>
+)}
                   </div>
 
                   <p className="font-semibold">{formatStatus(quote.status)}</p>

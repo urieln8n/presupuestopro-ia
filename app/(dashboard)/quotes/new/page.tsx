@@ -252,6 +252,8 @@ export default function NewQuotePage() {
           user_id: user.id,
           client_id: clientData.id,
           quote_type: selectedTemplate.quoteType,
+          template_id: selectedTemplate.id,
+template_name: selectedTemplate.name,
           title: generatedQuote.title,
           description: generatedQuote.summary,
           estimated_price: generatedQuote.price,
