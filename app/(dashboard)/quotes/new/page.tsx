@@ -409,28 +409,61 @@ export default function NewQuotePage() {
         return;
       }
 
-      let clientId = existingClientId;
+     let clientId = existingClientId;
 
-      if (!clientId) {
-        const { data: clientData, error: clientError } = await supabase
-          .from("clients")
-          .insert({
-            user_id: user.id,
-            name: client.name.trim() || "Cliente sin nombre",
-            phone: client.phone.trim(),
-            email: client.email.trim(),
-            city: client.city.trim(),
-            address: client.address.trim(),
-          })
-          .select("id")
-          .single();
+if (!clientId) {
+  const cleanPhone = client.phone.trim();
+  const cleanEmail = client.email.trim().toLowerCase();
 
-        if (clientError) {
-          throw clientError;
-        }
+  let existingClient = null;
 
-        clientId = clientData.id;
-      }
+  if (cleanPhone || cleanEmail) {
+    let query = supabase
+      .from("clients")
+      .select("id")
+      .eq("user_id", user.id)
+      .limit(1);
+
+    if (cleanPhone && cleanEmail) {
+      query = query.or(`phone.eq.${cleanPhone},email.eq.${cleanEmail}`);
+    } else if (cleanPhone) {
+      query = query.eq("phone", cleanPhone);
+    } else if (cleanEmail) {
+      query = query.eq("email", cleanEmail);
+    }
+
+    const { data: existingClients, error: existingClientError } = await query;
+
+    if (existingClientError) {
+      throw existingClientError;
+    }
+
+    existingClient = existingClients?.[0] || null;
+  }
+
+  if (existingClient) {
+    clientId = existingClient.id;
+  } else {
+    const { data: clientData, error: clientError } = await supabase
+      .from("clients")
+      .insert({
+        user_id: user.id,
+        name: client.name.trim() || "Cliente sin nombre",
+        phone: cleanPhone,
+        email: cleanEmail,
+        city: client.city.trim(),
+        address: client.address.trim(),
+      })
+      .select("id")
+      .single();
+
+    if (clientError) {
+      throw clientError;
+    }
+
+    clientId = clientData.id;
+  }
+}
 
       const { data: quoteData, error: quoteError } = await supabase
         .from("quotes")
