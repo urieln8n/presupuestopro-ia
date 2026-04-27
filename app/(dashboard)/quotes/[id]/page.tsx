@@ -102,6 +102,16 @@ export default function QuoteDetailPage({
       setIsLoading(true);
       setErrorMessage("");
 
+const {
+  data: { user },
+  error: userError,
+} = await supabase.auth.getUser();
+
+if (userError || !user) {
+  window.location.href = "/login";
+  return;
+}
+
       const { data, error } = await supabase
         .from("quotes")
         .select(
@@ -133,6 +143,7 @@ export default function QuoteDetailPage({
         `
         )
         .eq("id", id)
+        .eq("user_id", user.id)
         .single();
 
       if (error) {

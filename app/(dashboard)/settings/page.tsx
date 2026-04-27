@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase/client";
 
 type BusinessSettings = {
   id: string;
+  user_id?: string | null;
   company_name: string;
   owner_name: string | null;
   phone: string | null;
@@ -16,6 +17,7 @@ type BusinessSettings = {
 
 const emptySettings: BusinessSettings = {
   id: "",
+  user_id: null,
   company_name: "",
   owner_name: "",
   phone: "",
@@ -38,22 +40,56 @@ export default function SettingsPage() {
       setIsLoading(true);
       setErrorMessage("");
 
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        window.location.href = "/login";
+        return;
+      }
+
       const { data, error } = await supabase
         .from("business_settings")
         .select("*")
+        .eq("user_id", user.id)
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error) {
         throw error;
       }
 
+      if (!data) {
+        const { data: newSettings, error: insertError } = await supabase
+          .from("business_settings")
+          .insert({
+            user_id: user.id,
+            company_name: "Mi negocio",
+            owner_name: "",
+            phone: "",
+            email: user.email || "",
+            city: "",
+            address: "",
+            legal_note:
+              "El precio indicado es una estimación basada en la información facilitada. Puede ajustarse tras visita técnica o cambios en el alcance del trabajo.",
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          throw insertError;
+        }
+
+        setSettings(newSettings as BusinessSettings);
+        return;
+      }
+
       setSettings(data as BusinessSettings);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Error cargando ajustes"
+        error instanceof Error ? error.message : "Error cargando ajustes"
       );
     } finally {
       setIsLoading(false);
@@ -66,6 +102,16 @@ export default function SettingsPage() {
       setMessage("");
       setErrorMessage("");
 
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        window.location.href = "/login";
+        return;
+      }
+
       const { error } = await supabase
         .from("business_settings")
         .update({
@@ -77,7 +123,8 @@ export default function SettingsPage() {
           address: settings.address,
           legal_note: settings.legal_note,
         })
-        .eq("id", settings.id);
+        .eq("id", settings.id)
+        .eq("user_id", user.id);
 
       if (error) {
         throw error;
@@ -86,9 +133,7 @@ export default function SettingsPage() {
       setMessage("Ajustes guardados correctamente.");
     } catch (error) {
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Error guardando ajustes"
+        error instanceof Error ? error.message : "Error guardando ajustes"
       );
     } finally {
       setIsSaving(false);

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { LogoutButton } from "@/components/auth/logout-button";
 
 type QuoteRow = {
   id: string;
@@ -39,6 +40,16 @@ export default function DashboardPage() {
       setIsLoading(true);
       setErrorMessage("");
 
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        window.location.href = "/login";
+        return;
+      }
+
       const { data, error } = await supabase
         .from("quotes")
         .select(
@@ -54,6 +65,7 @@ export default function DashboardPage() {
           )
         `
         )
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -76,9 +88,18 @@ export default function DashboardPage() {
 
   const stats = useMemo(() => {
     const total = quotes.length;
-    const pending = quotes.filter((quote) => quote.status === "pending").length;
-    const accepted = quotes.filter((quote) => quote.status === "accepted").length;
-    const rejected = quotes.filter((quote) => quote.status === "rejected").length;
+
+    const pending = quotes.filter(
+      (quote) => quote.status === "pending" || !quote.status
+    ).length;
+
+    const accepted = quotes.filter(
+      (quote) => quote.status === "accepted"
+    ).length;
+
+    const rejected = quotes.filter(
+      (quote) => quote.status === "rejected"
+    ).length;
 
     const totalAmount = quotes.reduce((sum, quote) => {
       return sum + Number(quote.estimated_price || 0);
@@ -120,6 +141,8 @@ export default function DashboardPage() {
             >
               Crear presupuesto
             </a>
+            
+            <LogoutButton />
           </div>
         </div>
 
@@ -200,9 +223,7 @@ export default function DashboardPage() {
                     </p>
                   </div>
 
-                  <p className="font-semibold">
-                    {formatStatus(quote.status)}
-                  </p>
+                  <p className="font-semibold">{formatStatus(quote.status)}</p>
 
                   <p className="font-bold">
                     {formatCurrency(Number(quote.estimated_price || 0))}

@@ -255,15 +255,25 @@ const [isGenerating, setIsGenerating] = useState(false);
   throw new Error("Añade el nombre del cliente antes de guardar.");
 }
 
+const {
+  data: { user },
+  error: userError,
+} = await supabase.auth.getUser();
+
+if (userError || !user) {
+  throw new Error("Debes iniciar sesión para guardar presupuestos.");
+}
+
       const { data: clientData, error: clientError } = await supabase
         .from("clients")
         .insert({
-          name: client.name || "Cliente sin nombre",
-          phone: client.phone,
-          email: client.email,
-          address: client.address,
-          city: client.city,
-        })
+  user_id: user.id,
+  name: client.name || "Cliente sin nombre",
+  phone: client.phone,
+  email: client.email,
+  address: client.address,
+  city: client.city,
+})
         .select()
         .single();
 
@@ -274,9 +284,10 @@ const [isGenerating, setIsGenerating] = useState(false);
       const { data: quoteData, error: quoteError } = await supabase
         .from("quotes")
         .insert({
-          client_id: clientData.id,
-          quote_type: quoteType,
-          title: generatedQuote.title,
+  user_id: user.id,
+  client_id: clientData.id,
+  quote_type: quoteType,
+  title: generatedQuote.title,
           description: generatedQuote.summary,
           estimated_price: generatedQuote.price,
           status: "pending",

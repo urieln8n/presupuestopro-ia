@@ -48,6 +48,16 @@ export default function QuotesPage() {
       setIsLoading(true);
       setErrorMessage("");
 
+const {
+  data: { user },
+  error: userError,
+} = await supabase.auth.getUser();
+
+if (userError || !user) {
+  window.location.href = "/login";
+  return;
+}
+
       const { data, error } = await supabase
         .from("quotes")
         .select(
@@ -66,6 +76,7 @@ export default function QuotesPage() {
           )
         `
         )
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) {
