@@ -25,6 +25,7 @@ type QuoteDetail = {
   whatsapp_message: string | null;
   created_at: string;
   clients: {
+    id: string;
     name: string | null;
     phone: string | null;
     email: string | null;
@@ -135,6 +136,7 @@ export default function QuoteDetailPage({
           whatsapp_message,
           created_at,
           clients (
+            id,
             name,
             phone,
             email,
@@ -290,7 +292,7 @@ export default function QuoteDetailPage({
   if (isLoading) {
     return (
       <main className="min-h-screen bg-zinc-50 p-6">
-        <div className="mx-auto max-w-5xl">
+        <div className="mx-auto max-w-6xl">
           <p className="text-zinc-500">Cargando presupuesto...</p>
         </div>
       </main>
@@ -300,7 +302,7 @@ export default function QuoteDetailPage({
   if (errorMessage && !quote) {
     return (
       <main className="min-h-screen bg-zinc-50 p-6">
-        <div className="mx-auto max-w-5xl">
+        <div className="mx-auto max-w-6xl">
           <a
             href="/quotes"
             className="text-sm font-semibold text-zinc-500 hover:text-zinc-950"
@@ -319,7 +321,7 @@ export default function QuoteDetailPage({
   if (!quote) {
     return (
       <main className="min-h-screen bg-zinc-50 p-6">
-        <div className="mx-auto max-w-5xl">
+        <div className="mx-auto max-w-6xl">
           <p className="text-zinc-500">Presupuesto no encontrado.</p>
         </div>
       </main>
@@ -327,6 +329,7 @@ export default function QuoteDetailPage({
   }
 
   const budgetNumber = createBudgetNumber(quote.id, quote.created_at);
+
   const legalNote =
     businessSettings?.legal_note ||
     "El precio indicado es una estimación basada en la información facilitada. Puede ajustarse tras visita técnica o cambios en el alcance del trabajo.";
@@ -358,11 +361,11 @@ export default function QuoteDetailPage({
 
           <div className="flex flex-wrap gap-3">
             <a
-  href={`/quotes/${quote.id}/edit`}
-  className="rounded-2xl border px-5 py-3 font-semibold"
->
-  Editar
-</a>
+              href={`/quotes/${quote.id}/edit`}
+              className="rounded-2xl border px-5 py-3 font-semibold"
+            >
+              Editar
+            </a>
 
             <button
               type="button"
@@ -552,7 +555,11 @@ export default function QuoteDetailPage({
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-2xl bg-green-600 px-5 py-3 text-center font-semibold text-white"
+                  className={`rounded-2xl px-5 py-3 text-center font-semibold text-white ${
+                    quote.clients?.phone
+                      ? "bg-green-600"
+                      : "pointer-events-none bg-zinc-300"
+                  }`}
                 >
                   Abrir WhatsApp
                 </a>
@@ -581,9 +588,7 @@ export default function QuoteDetailPage({
                     </p>
                   </div>
 
-                  <p className="font-black">
-                    {formatCurrency(item.total)}
-                  </p>
+                  <p className="font-black">{formatCurrency(item.total)}</p>
                 </div>
               ))}
             </div>
