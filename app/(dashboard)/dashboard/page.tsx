@@ -258,6 +258,13 @@ export default function DashboardPage() {
               Clientes
             </a>
 
+<a
+  href="/premium-requests"
+  className="rounded-2xl border px-5 py-3 text-center font-semibold"
+>
+  Solicitudes
+</a>
+
             <a
               href="/quotes/new"
               className="rounded-2xl bg-zinc-950 px-5 py-3 text-center font-semibold text-white"
