@@ -77,7 +77,7 @@ const plans = [
       "Mensaje para WhatsApp",
     ],
     cta: "Crear cuenta gratis",
-    href: "/register",
+    href: "/diagnostico",
     featured: false,
   },
   {
