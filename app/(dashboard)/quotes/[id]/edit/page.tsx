@@ -3,6 +3,13 @@
 import { use, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
+type QuoteItemEdit = {
+  id?: string;
+  name: string;
+  description: string;
+  total: string;
+};
+
 type QuoteEditData = {
   id: string;
   client_id: string | null;
@@ -19,6 +26,12 @@ type QuoteEditData = {
     city: string | null;
     address: string | null;
   } | null;
+  quote_items: {
+    id: string;
+    name: string | null;
+    description: string | null;
+    total: number | null;
+  }[];
 };
 
 export default function EditQuotePage({
@@ -40,6 +53,8 @@ export default function EditQuotePage({
   const [clientEmail, setClientEmail] = useState("");
   const [clientCity, setClientCity] = useState("");
   const [clientAddress, setClientAddress] = useState("");
+
+  const [items, setItems] = useState<QuoteItemEdit[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -80,6 +95,12 @@ export default function EditQuotePage({
             email,
             city,
             address
+          ),
+          quote_items (
+            id,
+            name,
+            description,
+            total
           )
         `
         )
@@ -105,6 +126,15 @@ export default function EditQuotePage({
       setClientEmail(quoteData.clients?.email || "");
       setClientCity(quoteData.clients?.city || "");
       setClientAddress(quoteData.clients?.address || "");
+
+      setItems(
+        (quoteData.quote_items || []).map((item) => ({
+          id: item.id,
+          name: item.name || "",
+          description: item.description || "",
+          total: String(item.total || ""),
+        }))
+      );
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Error cargando presupuesto"
@@ -112,6 +142,49 @@ export default function EditQuotePage({
     } finally {
       setIsLoading(false);
     }
+  }
+
+  function updateItem(
+    index: number,
+    field: keyof QuoteItemEdit,
+    value: string
+  ) {
+    setItems((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              [field]: value,
+            }
+          : item
+      )
+    );
+  }
+
+  function addItem() {
+    setItems((current) => [
+      ...current,
+      {
+        name: "",
+        description: "",
+        total: "",
+      },
+    ]);
+  }
+
+  function removeItem(index: number) {
+    setItems((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  }
+
+  function calculateItemsTotal() {
+    return items.reduce((sum, item) => {
+      return sum + Number(item.total || 0);
+    }, 0);
+  }
+
+  function syncPriceWithItems() {
+    const total = calculateItemsTotal();
+    setEstimatedPrice(String(Math.round(total)));
   }
 
   async function saveChanges() {
@@ -136,6 +209,18 @@ export default function EditQuotePage({
 
       if (!Number.isFinite(priceNumber) || priceNumber <= 0) {
         throw new Error("El precio debe ser un número mayor que 0.");
+      }
+
+      const validItems = items
+        .map((item) => ({
+          name: item.name.trim(),
+          description: item.description.trim(),
+          total: Number(item.total || 0),
+        }))
+        .filter((item) => item.name && item.total > 0);
+
+      if (validItems.length === 0) {
+        throw new Error("Añade al menos una partida con nombre e importe.");
       }
 
       const {
@@ -181,7 +266,34 @@ export default function EditQuotePage({
         }
       }
 
-      setSuccessMessage("Presupuesto y cliente actualizados correctamente.");
+      const { error: deleteItemsError } = await supabase
+        .from("quote_items")
+        .delete()
+        .eq("quote_id", quote.id);
+
+      if (deleteItemsError) {
+        throw deleteItemsError;
+      }
+
+      const itemsToInsert = validItems.map((item) => ({
+        quote_id: quote.id,
+        name: item.name,
+        description: item.description,
+        quantity: 1,
+        unit: "servicio",
+        unit_price: item.total,
+        total: item.total,
+      }));
+
+      const { error: insertItemsError } = await supabase
+        .from("quote_items")
+        .insert(itemsToInsert);
+
+      if (insertItemsError) {
+        throw insertItemsError;
+      }
+
+      setSuccessMessage("Presupuesto, cliente y partidas actualizados.");
 
       setTimeout(() => {
         window.location.href = `/quotes/${quote.id}`;
@@ -240,7 +352,7 @@ export default function EditQuotePage({
 
   return (
     <main className="min-h-screen bg-zinc-50 p-6">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-6xl">
         <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
             <a
@@ -259,7 +371,7 @@ export default function EditQuotePage({
             </h1>
 
             <p className="mt-2 text-zinc-500">
-              Edita el presupuesto y los datos del cliente antes de enviarlo.
+              Edita presupuesto, cliente y partidas antes de enviar el PDF.
             </p>
           </div>
 
@@ -284,75 +396,168 @@ export default function EditQuotePage({
         )}
 
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-          <section className="rounded-3xl bg-white p-6 shadow-sm">
-            <div>
+          <div className="space-y-6">
+            <section className="rounded-3xl bg-white p-6 shadow-sm">
               <p className="text-sm font-semibold text-zinc-500">
                 Datos del presupuesto
               </p>
               <h2 className="mt-1 text-2xl font-black">
                 Información principal
               </h2>
-            </div>
 
-            <div className="mt-6 space-y-5">
-              <div>
-                <label className="text-sm font-bold text-zinc-700">
-                  Título del presupuesto
-                </label>
+              <div className="mt-6 space-y-5">
+                <div>
+                  <label className="text-sm font-bold text-zinc-700">
+                    Título del presupuesto
+                  </label>
 
-                <input
-                  className="mt-2 w-full rounded-2xl border px-4 py-3"
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                  placeholder="Título del presupuesto"
-                />
+                  <input
+                    className="mt-2 w-full rounded-2xl border px-4 py-3"
+                    value={title}
+                    onChange={(event) => setTitle(event.target.value)}
+                    placeholder="Título del presupuesto"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-bold text-zinc-700">
+                    Descripción / resumen
+                  </label>
+
+                  <textarea
+                    className="mt-2 min-h-36 w-full rounded-2xl border px-4 py-3"
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
+                    placeholder="Descripción del presupuesto"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-bold text-zinc-700">
+                    Precio estimado
+                  </label>
+
+                  <input
+                    type="number"
+                    className="mt-2 w-full rounded-2xl border px-4 py-3"
+                    value={estimatedPrice}
+                    onChange={(event) => setEstimatedPrice(event.target.value)}
+                    placeholder="Precio estimado"
+                  />
+
+                  <div className="mt-3 flex flex-col gap-3 md:flex-row">
+                    <button
+                      type="button"
+                      onClick={syncPriceWithItems}
+                      className="rounded-2xl border px-4 py-2 text-sm font-semibold"
+                    >
+                      Usar suma de partidas: {calculateItemsTotal()} €
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-bold text-zinc-700">
+                    Mensaje para WhatsApp
+                  </label>
+
+                  <textarea
+                    className="mt-2 min-h-40 w-full rounded-2xl border px-4 py-3"
+                    value={whatsappMessage}
+                    onChange={(event) => setWhatsappMessage(event.target.value)}
+                    placeholder="Mensaje para WhatsApp"
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-3xl bg-white p-6 shadow-sm">
+              <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+                <div>
+                  <p className="text-sm font-semibold text-zinc-500">
+                    Partidas
+                  </p>
+                  <h2 className="mt-1 text-2xl font-black">
+                    Conceptos del presupuesto
+                  </h2>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={addItem}
+                  className="rounded-2xl bg-zinc-950 px-5 py-3 font-semibold text-white"
+                >
+                  Añadir partida
+                </button>
               </div>
 
-              <div>
-                <label className="text-sm font-bold text-zinc-700">
-                  Descripción / resumen
-                </label>
+              <div className="mt-6 space-y-4">
+                {items.length === 0 && (
+                  <p className="text-zinc-500">No hay partidas todavía.</p>
+                )}
 
-                <textarea
-                  className="mt-2 min-h-36 w-full rounded-2xl border px-4 py-3"
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
-                  placeholder="Descripción del presupuesto"
-                />
+                {items.map((item, index) => (
+                  <div key={index} className="rounded-3xl border p-4">
+                    <div className="grid gap-4 md:grid-cols-[1fr_160px]">
+                      <div>
+                        <label className="text-sm font-bold text-zinc-700">
+                          Nombre
+                        </label>
+
+                        <input
+                          className="mt-2 w-full rounded-2xl border px-4 py-3"
+                          value={item.name}
+                          onChange={(event) =>
+                            updateItem(index, "name", event.target.value)
+                          }
+                          placeholder="Ej: Pintura, limpieza, materiales..."
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-bold text-zinc-700">
+                          Importe
+                        </label>
+
+                        <input
+                          type="number"
+                          className="mt-2 w-full rounded-2xl border px-4 py-3"
+                          value={item.total}
+                          onChange={(event) =>
+                            updateItem(index, "total", event.target.value)
+                          }
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="text-sm font-bold text-zinc-700">
+                        Descripción
+                      </label>
+
+                      <textarea
+                        className="mt-2 min-h-24 w-full rounded-2xl border px-4 py-3"
+                        value={item.description}
+                        onChange={(event) =>
+                          updateItem(index, "description", event.target.value)
+                        }
+                        placeholder="Descripción de la partida"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => removeItem(index)}
+                      className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700"
+                    >
+                      Eliminar partida
+                    </button>
+                  </div>
+                ))}
               </div>
-
-              <div>
-                <label className="text-sm font-bold text-zinc-700">
-                  Precio estimado
-                </label>
-
-                <input
-                  type="number"
-                  className="mt-2 w-full rounded-2xl border px-4 py-3"
-                  value={estimatedPrice}
-                  onChange={(event) => setEstimatedPrice(event.target.value)}
-                  placeholder="Precio estimado"
-                />
-
-                <p className="mt-2 text-xs text-zinc-500">
-                  Introduce el importe final sin símbolo de euro. Ejemplo: 3349
-                </p>
-              </div>
-
-              <div>
-                <label className="text-sm font-bold text-zinc-700">
-                  Mensaje para WhatsApp
-                </label>
-
-                <textarea
-                  className="mt-2 min-h-40 w-full rounded-2xl border px-4 py-3"
-                  value={whatsappMessage}
-                  onChange={(event) => setWhatsappMessage(event.target.value)}
-                  placeholder="Mensaje para WhatsApp"
-                />
-              </div>
-            </div>
-          </section>
+            </section>
+          </div>
 
           <aside className="h-fit rounded-3xl bg-white p-6 shadow-sm">
             <p className="text-sm font-semibold text-zinc-500">
@@ -427,6 +632,13 @@ export default function EditQuotePage({
                   placeholder="Dirección"
                 />
               </div>
+            </div>
+
+            <div className="mt-6 rounded-3xl bg-zinc-50 p-5">
+              <p className="text-sm text-zinc-500">Suma de partidas</p>
+              <p className="mt-2 text-3xl font-black">
+                {calculateItemsTotal()} €
+              </p>
             </div>
           </aside>
         </div>
