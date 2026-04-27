@@ -96,6 +96,20 @@ export default function NewQuotePage() {
 
   const selectedTemplate = getServiceTemplate(selectedTemplateId);
 
+  const squareMetersLabel =
+  selectedTemplateId === "bathroom_reform"
+    ? "m² del baño"
+    : selectedTemplateId === "rental_cleaning"
+      ? "m² de la vivienda"
+      : "m² del espacio";
+
+const squareMetersHelp =
+  selectedTemplateId === "bathroom_reform"
+    ? "Para reforma de baño, introduce solo los metros del baño, no de toda la vivienda."
+    : selectedTemplateId === "rental_cleaning"
+      ? "Para limpieza fin de alquiler, introduce los metros aproximados de la vivienda."
+      : "Para pintura y limpieza, introduce los metros aproximados del espacio a trabajar.";
+
   const estimatedPrice = calculateTemplatePrice({
     templateId: selectedTemplateId,
     squareMeters,
@@ -349,10 +363,16 @@ template_name: selectedTemplate.name,
                     onClick={() => {
                       setSelectedTemplateId(template.id);
                       setJob((current) => ({
-                        ...current,
-                        workType: template.defaultWorkType,
-                        cleaningType: template.defaultCleaningType,
-                      }));
+  ...current,
+  workType: template.defaultWorkType,
+  cleaningType: template.defaultCleaningType,
+  squareMeters:
+    template.id === "bathroom_reform"
+      ? "5"
+      : template.id === "rental_cleaning"
+        ? "80"
+        : "80",
+}));
                       setGeneratedQuote(null);
                       setSaveMessage("");
                       setErrorMessage("");
@@ -451,15 +471,21 @@ template_name: selectedTemplate.name,
                   }
                 />
 
-                <input
-                  type="number"
-                  className="rounded-2xl border px-4 py-3"
-                  placeholder="Metros cuadrados"
-                  value={job.squareMeters}
-                  onChange={(event) =>
-                    updateJob("squareMeters", event.target.value)
-                  }
-                />
+                <div>
+  <input
+    type="number"
+    className="w-full rounded-2xl border px-4 py-3"
+    placeholder={squareMetersLabel}
+    value={job.squareMeters}
+    onChange={(event) =>
+      updateJob("squareMeters", event.target.value)
+    }
+  />
+
+  <p className="mt-2 text-xs text-zinc-500">
+    {squareMetersHelp}
+  </p>
+</div>
 
                 <select
                   className="rounded-2xl border px-4 py-3"
