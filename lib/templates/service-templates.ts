@@ -58,8 +58,8 @@ export const serviceTemplates: ServiceTemplate[] = [
     defaultWorkType: "Reforma de baño",
     defaultCleaningType: "Limpieza final de obra",
     quoteType: "reform",
-    pricePerSquareMeter: 680,
-    minimumPrice: 1800,
+    pricePerSquareMeter: 520,
+    minimumPrice: 2500,
     suggestedItems: [
       {
         name: "Demolición y preparación",
