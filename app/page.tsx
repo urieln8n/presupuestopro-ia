@@ -42,17 +42,17 @@ const problems = [
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-zinc-950 text-white">
-      <section className="mx-auto flex min-h-screen max-w-6xl flex-col px-6 py-8">
-        <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
-          <div>
+    <main className="min-h-screen overflow-x-hidden bg-zinc-950 text-white">
+      <section className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 py-6 sm:px-6 sm:py-8">
+        <header className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
             <p className="text-lg font-black">PresupuestoPro IA</p>
-            <p className="text-sm text-zinc-400">
+            <p className="mt-1 max-w-xs text-sm leading-6 text-zinc-400 sm:max-w-none">
               Presupuestos, clientes y automatizaciones para negocios de servicios
             </p>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="grid gap-3 sm:flex sm:flex-row">
             <a
               href="/login"
               className="rounded-2xl border border-white/20 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-white hover:text-zinc-950"
@@ -69,23 +69,23 @@ export default function HomePage() {
           </div>
         </header>
 
-        <div className="grid flex-1 items-center gap-12 py-16 lg:grid-cols-[1.05fr_0.95fr]">
-          <div>
-            <p className="mb-5 inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-zinc-300">
+        <div className="grid flex-1 items-center gap-10 py-12 lg:grid-cols-[1.05fr_0.95fr] lg:py-16">
+          <div className="min-w-0">
+            <p className="mb-5 inline-flex max-w-full rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold leading-6 text-zinc-300">
               Para autónomos, emprendedores y pequeños negocios
             </p>
 
-            <h1 className="max-w-4xl text-5xl font-black leading-tight md:text-7xl">
+            <h1 className="max-w-4xl text-balance text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
               Presupuestos, clientes y automatizaciones con IA para vender más rápido.
             </h1>
 
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-300">
+            <p className="mt-6 max-w-2xl text-base leading-8 text-zinc-300 sm:text-lg">
               Crea presupuestos profesionales en minutos, organiza tus clientes,
               envía propuestas por WhatsApp y detecta oportunidades de mejora en
               tu web y procesos comerciales.
             </p>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-8 grid gap-3 sm:flex sm:flex-row">
               <a
                 href="/register"
                 className="rounded-2xl bg-white px-6 py-4 text-center font-bold text-zinc-950 transition hover:bg-zinc-200"
@@ -104,46 +104,46 @@ export default function HomePage() {
             <div className="mt-10 grid gap-4 sm:grid-cols-3">
               <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
                 <p className="text-3xl font-black">60s</p>
-                <p className="mt-2 text-sm text-zinc-400">
+                <p className="mt-2 text-sm leading-6 text-zinc-400">
                   Presupuestos listos en menos tiempo.
                 </p>
               </div>
 
               <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
                 <p className="text-3xl font-black">IA</p>
-                <p className="mt-2 text-sm text-zinc-400">
+                <p className="mt-2 text-sm leading-6 text-zinc-400">
                   Textos comerciales y partidas inteligentes.
                 </p>
               </div>
 
               <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
                 <p className="text-3xl font-black">CRM</p>
-                <p className="mt-2 text-sm text-zinc-400">
+                <p className="mt-2 text-sm leading-6 text-zinc-400">
                   Clientes, historial y seguimiento.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6 shadow-2xl">
-            <div className="rounded-[1.5rem] bg-white p-6 text-zinc-950">
-              <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0 rounded-[2rem] border border-white/10 bg-white/5 p-4 shadow-2xl sm:p-6">
+            <div className="rounded-[1.5rem] bg-white p-5 text-zinc-950 sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-sm font-semibold text-zinc-500">
                     Presupuesto generado
                   </p>
 
-                  <h2 className="mt-2 text-2xl font-black">
+                  <h2 className="mt-2 text-2xl font-black leading-tight">
                     Reforma de baño + limpieza final
                   </h2>
                 </div>
 
-                <div className="rounded-2xl bg-green-100 px-3 py-2 text-xs font-bold text-green-700">
+                <div className="w-fit rounded-2xl bg-green-100 px-3 py-2 text-xs font-bold text-green-700">
                   IA
                 </div>
               </div>
 
-              <p className="mt-4 leading-7 text-zinc-600">
+              <p className="mt-4 text-sm leading-7 text-zinc-600 sm:text-base">
                 Propuesta profesional para reforma de baño, incluyendo
                 preparación, trabajos principales, acabados y limpieza final del
                 espacio.
@@ -160,27 +160,27 @@ export default function HomePage() {
               <div className="mt-6 space-y-3">
                 <div className="rounded-2xl border p-4">
                   <p className="font-bold">Demolición y preparación</p>
-                  <p className="mt-1 text-sm text-zinc-500">
+                  <p className="mt-1 text-sm leading-6 text-zinc-500">
                     Retirada de elementos existentes y preparación del espacio.
                   </p>
                 </div>
 
                 <div className="rounded-2xl border p-4">
                   <p className="font-bold">Trabajos de reforma</p>
-                  <p className="mt-1 text-sm text-zinc-500">
+                  <p className="mt-1 text-sm leading-6 text-zinc-500">
                     Ejecución principal según alcance indicado.
                   </p>
                 </div>
 
                 <div className="rounded-2xl border p-4">
                   <p className="font-bold">Limpieza final</p>
-                  <p className="mt-1 text-sm text-zinc-500">
+                  <p className="mt-1 text-sm leading-6 text-zinc-500">
                     Entrega del espacio limpio y preparado para uso.
                   </p>
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 <div className="rounded-2xl bg-zinc-950 px-5 py-3 text-center text-sm font-bold text-white">
                   Enviar WhatsApp
                 </div>
@@ -194,7 +194,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="border-t border-white/10 bg-zinc-900 px-6 py-20">
+      <section className="border-t border-white/10 bg-zinc-900 px-5 py-20 sm:px-6">
         <div className="mx-auto max-w-6xl">
           <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
             <div>
@@ -202,7 +202,7 @@ export default function HomePage() {
                 El problema real
               </p>
 
-              <h2 className="mt-3 text-4xl font-black">
+              <h2 className="mt-3 text-balance text-3xl font-black leading-tight sm:text-4xl">
                 Muchos negocios pierden clientes por responder tarde o trabajar desordenados.
               </h2>
 
@@ -219,7 +219,9 @@ export default function HomePage() {
                   key={problem}
                   className="rounded-3xl border border-white/10 bg-white/5 p-5"
                 >
-                  <p className="font-semibold text-zinc-200">{problem}</p>
+                  <p className="font-semibold leading-7 text-zinc-200">
+                    {problem}
+                  </p>
                 </div>
               ))}
             </div>
@@ -227,14 +229,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="border-t border-white/10 bg-zinc-950 px-6 py-20">
+      <section className="border-t border-white/10 bg-zinc-950 px-5 py-20 sm:px-6">
         <div className="mx-auto max-w-6xl">
           <div className="max-w-2xl">
             <p className="text-sm font-semibold text-zinc-400">
               Una plataforma práctica
             </p>
 
-            <h2 className="mt-3 text-4xl font-black">
+            <h2 className="mt-3 text-balance text-3xl font-black leading-tight sm:text-4xl">
               El centro operativo para vender y trabajar mejor.
             </h2>
 
@@ -251,7 +253,9 @@ export default function HomePage() {
                 key={service.title}
                 className="rounded-3xl border border-white/10 bg-white/5 p-6"
               >
-                <h3 className="text-2xl font-black">{service.title}</h3>
+                <h3 className="text-2xl font-black leading-tight">
+                  {service.title}
+                </h3>
                 <p className="mt-4 leading-7 text-zinc-400">
                   {service.description}
                 </p>
@@ -261,7 +265,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="border-t border-white/10 bg-zinc-900 px-6 py-20">
+      <section className="border-t border-white/10 bg-zinc-900 px-5 py-20 sm:px-6">
         <div className="mx-auto max-w-6xl">
           <div className="grid gap-10 lg:grid-cols-[1fr_1fr]">
             <div>
@@ -269,7 +273,7 @@ export default function HomePage() {
                 Para quién es
               </p>
 
-              <h2 className="mt-3 text-4xl font-black">
+              <h2 className="mt-3 text-balance text-3xl font-black leading-tight sm:text-4xl">
                 Ideal para negocios que venden servicios y necesitan responder rápido.
               </h2>
 
@@ -297,7 +301,7 @@ export default function HomePage() {
                 Producto principal
               </p>
               <h3 className="mt-2 text-2xl font-black">Presupuestos IA</h3>
-              <p className="mt-4 text-zinc-600">
+              <p className="mt-4 leading-7 text-zinc-600">
                 Plantillas inteligentes, cálculo, PDF, WhatsApp, edición y
                 seguimiento comercial.
               </p>
@@ -308,7 +312,7 @@ export default function HomePage() {
                 Servicio complementario
               </p>
               <h3 className="mt-2 text-2xl font-black">Automatizaciones</h3>
-              <p className="mt-4 text-zinc-400">
+              <p className="mt-4 leading-7 text-zinc-400">
                 Formularios, respuestas, captación, seguimiento y procesos
                 repetitivos conectados a tu negocio.
               </p>
@@ -319,7 +323,7 @@ export default function HomePage() {
                 Diagnóstico
               </p>
               <h3 className="mt-2 text-2xl font-black">Auditoría web</h3>
-              <p className="mt-4 text-zinc-400">
+              <p className="mt-4 leading-7 text-zinc-400">
                 Revisión de web, embudo, comunicación, automatizaciones y puntos
                 de mejora para convertir mejor.
               </p>
@@ -328,25 +332,25 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="border-t border-white/10 bg-zinc-950 px-6 py-20">
+      <section className="border-t border-white/10 bg-zinc-950 px-5 py-20 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <div className="rounded-[2rem] bg-white p-8 text-zinc-950 md:flex md:items-center md:justify-between md:p-10">
+          <div className="rounded-[2rem] bg-white p-6 text-zinc-950 sm:p-8 md:flex md:items-center md:justify-between md:p-10">
             <div>
               <p className="text-sm font-semibold text-zinc-500">
                 Empieza por lo más importante
               </p>
 
-              <h2 className="mt-2 text-4xl font-black">
+              <h2 className="mt-2 text-balance text-3xl font-black leading-tight sm:text-4xl">
                 Crea tu primer presupuesto profesional hoy.
               </h2>
 
-              <p className="mt-4 max-w-2xl text-zinc-600">
+              <p className="mt-4 max-w-2xl leading-7 text-zinc-600">
                 Después podrás organizar clientes, mejorar tu seguimiento y
                 avanzar hacia automatizaciones comerciales y auditoría web.
               </p>
             </div>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row md:mt-0">
+            <div className="mt-8 grid gap-3 sm:flex sm:flex-row md:mt-0">
               <a
                 href="/register"
                 className="rounded-2xl bg-zinc-950 px-6 py-4 text-center font-bold text-white"
