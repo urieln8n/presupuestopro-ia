@@ -44,9 +44,10 @@ const plans = [
   {
     name: "Free",
     price: "0 €",
+    setup: "Sin setup inicial",
     subtitle: "Para probar la herramienta",
     description:
-      "Ideal para empezar, validar el flujo y crear tus primeros presupuestos profesionales.",
+      "Ideal para validar el flujo, crear los primeros presupuestos y entender cómo puede ayudarte la plataforma.",
     features: [
       "Presupuestos limitados",
       "Plantillas básicas",
@@ -61,9 +62,10 @@ const plans = [
   {
     name: "Pro",
     price: "19 €/mes",
+    setup: "Setup opcional desde 49 €",
     subtitle: "Para autónomos y negocios activos",
     description:
-      "El plan recomendado para trabajar con clientes reales, ahorrar tiempo y enviar propuestas profesionales.",
+      "Para negocios que quieren trabajar con clientes reales, ahorrar tiempo y presentar presupuestos profesionales.",
     features: [
       "Presupuestos con IA",
       "Presupuestos ilimitados",
@@ -72,6 +74,7 @@ const plans = [
       "WhatsApp integrado",
       "Edición de presupuesto, cliente y partidas",
       "Dashboard comercial",
+      "Configuración inicial opcional",
     ],
     cta: "Empezar con Pro",
     href: "/register",
@@ -80,14 +83,16 @@ const plans = [
   {
     name: "Premium",
     price: "Desde 79 €/mes",
+    setup: "Setup personalizado desde 199 €",
     subtitle: "Para negocios que quieren automatizar",
     description:
-      "Para empresas que quieren acompañamiento, automatizaciones comerciales y mejora de su sistema digital.",
+      "Para empresas que quieren una puesta en marcha profesional, automatizaciones, auditoría y acompañamiento inicial.",
     features: [
       "Todo lo incluido en Pro",
       "Auditoría web y operativa",
       "Automatizaciones comerciales",
       "Configuración personalizada",
+      "Plantillas adaptadas al negocio",
       "Flujos de captación y seguimiento",
       "Soporte prioritario",
     ],
@@ -253,6 +258,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* PROBLEMA */}
       <section className="border-t border-white/10 bg-zinc-900 px-5 py-20 sm:px-6">
         <div className="mx-auto max-w-6xl">
           <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
@@ -289,6 +295,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* SERVICIOS */}
       <section className="border-t border-white/10 bg-zinc-950 px-5 py-20 sm:px-6">
         <div className="mx-auto max-w-6xl">
           <div className="max-w-2xl">
@@ -325,6 +332,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* AUDIENCIA */}
       <section className="border-t border-white/10 bg-zinc-900 px-5 py-20 sm:px-6">
         <div className="mx-auto max-w-6xl">
           <div className="grid gap-10 lg:grid-cols-[1fr_1fr]">
@@ -393,6 +401,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* PLANES */}
       <section
         id="planes"
         className="border-t border-white/10 bg-zinc-950 px-5 py-20 sm:px-6"
@@ -404,13 +413,14 @@ export default function HomePage() {
             </p>
 
             <h2 className="mt-3 text-balance text-3xl font-black leading-tight sm:text-5xl">
-              Empieza gratis y escala cuando tu negocio lo necesite.
+              Una plataforma profesional con puesta en marcha adaptada a tu
+              negocio.
             </h2>
 
             <p className="mt-5 leading-8 text-zinc-300">
-              PresupuestoPro IA está pensado para crecer contigo: primero
-              presupuestos, después clientes, automatizaciones y mejora de tu
-              sistema comercial.
+              La mensualidad cubre el uso continuo de la plataforma. El setup
+              inicial cubre configuración, ajustes, plantillas, textos y puesta
+              en marcha para que el negocio empiece correctamente.
             </p>
           </div>
 
@@ -441,6 +451,17 @@ export default function HomePage() {
                 <h3 className="mt-2 text-3xl font-black">{plan.name}</h3>
 
                 <p className="mt-4 text-4xl font-black">{plan.price}</p>
+
+                <div
+                  className={`mt-4 rounded-2xl p-4 ${
+                    plan.featured
+                      ? "bg-zinc-100 text-zinc-700"
+                      : "border border-white/10 bg-white/5 text-zinc-300"
+                  }`}
+                >
+                  <p className="text-sm font-black">Setup inicial</p>
+                  <p className="mt-1 text-sm font-semibold">{plan.setup}</p>
+                </div>
 
                 <p
                   className={`mt-4 leading-7 ${
@@ -488,6 +509,21 @@ export default function HomePage() {
             ))}
           </div>
 
+          <div className="mx-auto mt-10 max-w-4xl rounded-[2rem] border border-white/10 bg-white/5 p-6 text-center">
+            <p className="text-sm font-black uppercase tracking-widest text-zinc-400">
+              Cómo funciona el setup
+            </p>
+
+            <p className="mt-4 leading-8 text-zinc-300">
+              El setup es un pago único para dejar la plataforma preparada según
+              el negocio: datos de empresa, servicios, plantillas, textos,
+              flujo de presupuestos, automatizaciones iniciales y revisión de
+              oportunidades. En Free no es necesario. En Pro puede contratarse
+              si el cliente quiere ayuda. En Premium forma parte de una puesta
+              en marcha más personalizada.
+            </p>
+          </div>
+
           <p className="mx-auto mt-8 max-w-3xl text-center text-sm leading-7 text-zinc-500">
             Los precios pueden ajustarse según uso, país, volumen de
             presupuestos o configuración personalizada. El plan Premium puede
@@ -497,6 +533,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* CTA FINAL */}
       <section className="border-t border-white/10 bg-zinc-950 px-5 py-20 sm:px-6">
         <div className="mx-auto max-w-6xl">
           <div className="rounded-[2rem] bg-white p-6 text-zinc-950 sm:p-8 md:flex md:items-center md:justify-between md:p-10">
