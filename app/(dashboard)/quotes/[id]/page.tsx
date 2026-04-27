@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase/client";
 
 type QuoteItem = {
   id: string;
-  name: string;
+  name: string | null;
   description: string | null;
   quantity: number | null;
   unit: string | null;
@@ -19,21 +19,23 @@ type QuoteDetail = {
   description: string | null;
   estimated_price: number | null;
   status: string | null;
-  quote_type: string;
+  quote_type: string | null;
+  template_id: string | null;
+  template_name: string | null;
   whatsapp_message: string | null;
   created_at: string;
   clients: {
     name: string | null;
     phone: string | null;
     email: string | null;
-    address: string | null;
     city: string | null;
+    address: string | null;
   } | null;
   quote_items: QuoteItem[];
 };
 
 type BusinessSettings = {
-  company_name: string;
+  company_name: string | null;
   owner_name: string | null;
   phone: string | null;
   email: string | null;
@@ -47,37 +49,44 @@ function formatCurrency(value: number | null) {
     style: "currency",
     currency: "EUR",
     maximumFractionDigits: 0,
-  }).format(value || 0);
-}
-
-function formatDate(date: string) {
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(date));
-}
-
-function formatQuoteNumber(id: string, createdAt: string) {
-  const year = new Date(createdAt).getFullYear();
-  const shortId = id.slice(0, 8).toUpperCase();
-
-  return `PPIA-${year}-${shortId}`;
-}
-
-function createWhatsAppLink(phone: string | null | undefined, message: string) {
-  const cleanPhone = (phone || "").replace(/\D/g, "");
-  const encodedMessage = encodeURIComponent(message);
-
-  if (!cleanPhone) return "#";
-
-  return `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
+  }).format(Number(value || 0));
 }
 
 function formatStatus(status: string | null) {
   if (status === "accepted") return "Aceptado";
   if (status === "rejected") return "Rechazado";
   return "Pendiente";
+}
+
+function formatQuoteType(type: string | null) {
+  if (type === "reform") return "Reforma";
+  if (type === "cleaning") return "Limpieza";
+  if (type === "combined") return "Combinado";
+  return "Servicio";
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function createBudgetNumber(quoteId: string, createdAt: string) {
+  const year = new Date(createdAt).getFullYear();
+  return `PPIA-${year}-${quoteId.slice(0, 8).toUpperCase()}`;
+}
+
+function createWhatsAppLink(phone: string | null | undefined, message: string) {
+  const cleanPhone = String(phone || "").replace(/\D/g, "");
+  const encodedMessage = encodeURIComponent(message || "");
+
+  if (!cleanPhone) {
+    return "#";
+  }
+
+  return `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
 }
 
 export default function QuoteDetailPage({
@@ -88,31 +97,30 @@ export default function QuoteDetailPage({
   const { id } = use(params);
 
   const [quote, setQuote] = useState<QuoteDetail | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState("");
   const [businessSettings, setBusinessSettings] =
     useState<BusinessSettings | null>(null);
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSavingEdit, setIsSavingEdit] = useState(false);
-  const [editMessage, setEditMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   async function loadQuote() {
     try {
       setIsLoading(true);
       setErrorMessage("");
 
-const {
-  data: { user },
-  error: userError,
-} = await supabase.auth.getUser();
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-if (userError || !user) {
-  window.location.href = "/login";
-  return;
-}
+      if (userError || !user) {
+        window.location.href = "/login";
+        return;
+      }
 
-      const { data, error } = await supabase
+      const { data: quoteData, error: quoteError } = await supabase
         .from("quotes")
         .select(
           `
@@ -122,14 +130,16 @@ if (userError || !user) {
           estimated_price,
           status,
           quote_type,
+          template_id,
+          template_name,
           whatsapp_message,
           created_at,
           clients (
             name,
             phone,
             email,
-            address,
-            city
+            city,
+            address
           ),
           quote_items (
             id,
@@ -146,95 +156,130 @@ if (userError || !user) {
         .eq("user_id", user.id)
         .single();
 
-      if (error) {
-        throw error;
+      if (quoteError) {
+        throw quoteError;
       }
-
-      setQuote(data as unknown as QuoteDetail);
 
       const { data: settingsData } = await supabase
         .from("business_settings")
-        .select("*")
-        .limit(1)
-        .single();
+        .select(
+          `
+          company_name,
+          owner_name,
+          phone,
+          email,
+          city,
+          address,
+          legal_note
+        `
+        )
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-      if (settingsData) {
-        setBusinessSettings(settingsData as BusinessSettings);
-      }
+      setQuote(quoteData as unknown as QuoteDetail);
+      setBusinessSettings((settingsData || null) as BusinessSettings | null);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Error cargando el presupuesto"
+        error instanceof Error ? error.message : "Error cargando presupuesto"
       );
     } finally {
       setIsLoading(false);
     }
   }
 
-  async function updateStatus(status: "pending" | "accepted" | "rejected") {
-    if (!quote) return;
-
-    const { error } = await supabase
-      .from("quotes")
-      .update({ status })
-      .eq("id", quote.id);
-
-    if (error) {
-      setErrorMessage(error.message);
-      return;
-    }
-
-    setQuote({
-      ...quote,
-      status,
-    });
-  }
-
-  function updateQuoteField(
-    field: "title" | "description" | "estimated_price" | "whatsapp_message",
-    value: string
-  ) {
-    if (!quote) return;
-
-    setQuote({
-      ...quote,
-      [field]: field === "estimated_price" ? Number(value) : value,
-    });
-  }
-
-  async function saveEditedQuote() {
-    if (!quote) return;
-
+  async function updateStatus(status: "accepted" | "rejected" | "pending") {
     try {
-      setIsSavingEdit(true);
-      setEditMessage("");
+      if (!quote) return;
+
+      setIsUpdatingStatus(true);
       setErrorMessage("");
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        window.location.href = "/login";
+        return;
+      }
 
       const { error } = await supabase
         .from("quotes")
-        .update({
-          title: quote.title,
-          description: quote.description,
-          estimated_price: quote.estimated_price,
-          whatsapp_message: quote.whatsapp_message,
-        })
-        .eq("id", quote.id);
+        .update({ status })
+        .eq("id", quote.id)
+        .eq("user_id", user.id);
 
       if (error) {
         throw error;
       }
 
-      setEditMessage("Presupuesto actualizado correctamente.");
-      setIsEditing(false);
+      setQuote((current) =>
+        current
+          ? {
+              ...current,
+              status,
+            }
+          : current
+      );
     } catch (error) {
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Error actualizando presupuesto"
+        error instanceof Error ? error.message : "Error actualizando estado"
       );
     } finally {
-      setIsSavingEdit(false);
+      setIsUpdatingStatus(false);
+    }
+  }
+
+  async function deleteQuote() {
+    try {
+      if (!quote) return;
+
+      const confirmDelete = window.confirm(
+        "¿Seguro que quieres eliminar este presupuesto? Esta acción no se puede deshacer."
+      );
+
+      if (!confirmDelete) return;
+
+      setIsDeleting(true);
+      setErrorMessage("");
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const { error: itemsError } = await supabase
+        .from("quote_items")
+        .delete()
+        .eq("quote_id", quote.id);
+
+      if (itemsError) {
+        throw itemsError;
+      }
+
+      const { error: quoteError } = await supabase
+        .from("quotes")
+        .delete()
+        .eq("id", quote.id)
+        .eq("user_id", user.id);
+
+      if (quoteError) {
+        throw quoteError;
+      }
+
+      window.location.href = "/quotes";
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Error eliminando presupuesto"
+      );
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -245,36 +290,68 @@ if (userError || !user) {
   if (isLoading) {
     return (
       <main className="min-h-screen bg-zinc-50 p-6">
-        <div className="mx-auto max-w-5xl rounded-3xl bg-white p-8 shadow-sm">
+        <div className="mx-auto max-w-5xl">
           <p className="text-zinc-500">Cargando presupuesto...</p>
         </div>
       </main>
     );
   }
 
-  if (errorMessage || !quote) {
+  if (errorMessage && !quote) {
     return (
       <main className="min-h-screen bg-zinc-50 p-6">
-        <div className="mx-auto max-w-5xl rounded-3xl border border-red-200 bg-red-50 p-8 text-red-700">
-          {errorMessage || "No se encontró el presupuesto"}
+        <div className="mx-auto max-w-5xl">
+          <a
+            href="/quotes"
+            className="text-sm font-semibold text-zinc-500 hover:text-zinc-950"
+          >
+            ← Volver al historial
+          </a>
+
+          <div className="mt-6 rounded-3xl border border-red-200 bg-red-50 p-6 text-red-700">
+            {errorMessage}
+          </div>
         </div>
       </main>
     );
   }
 
+  if (!quote) {
+    return (
+      <main className="min-h-screen bg-zinc-50 p-6">
+        <div className="mx-auto max-w-5xl">
+          <p className="text-zinc-500">Presupuesto no encontrado.</p>
+        </div>
+      </main>
+    );
+  }
+
+  const budgetNumber = createBudgetNumber(quote.id, quote.created_at);
+  const legalNote =
+    businessSettings?.legal_note ||
+    "El precio indicado es una estimación basada en la información facilitada. Puede ajustarse tras visita técnica o cambios en el alcance del trabajo.";
+
   const whatsappMessage =
     quote.whatsapp_message ||
-    `Hola, te envío el presupuesto: ${quote.title || "Presupuesto"}`;
+    `Hola ${
+      quote.clients?.name || "cliente"
+    }, te envío el presupuesto. Importe estimado: ${formatCurrency(
+      quote.estimated_price
+    )}.`;
 
   return (
-    <main className="print-page min-h-screen bg-zinc-50 p-6">
-      <div className="mx-auto max-w-5xl">
+    <main className="min-h-screen bg-zinc-50 p-6">
+      <div className="mx-auto max-w-6xl">
         <div className="no-print mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <a href="/quotes" className="text-sm font-semibold text-zinc-500">
+            <a
+              href="/quotes"
+              className="text-sm font-semibold text-zinc-500 hover:text-zinc-950"
+            >
               ← Volver al historial
             </a>
-            <h1 className="mt-2 text-4xl font-black">
+
+            <h1 className="mt-3 text-4xl font-black">
               Detalle del presupuesto
             </h1>
           </div>
@@ -282,24 +359,17 @@ if (userError || !user) {
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={() => setIsEditing(!isEditing)}
+              onClick={() => window.print()}
               className="rounded-2xl border px-5 py-3 font-semibold"
             >
-              {isEditing ? "Cancelar edición" : "Editar presupuesto"}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => window.print()}
-              className="rounded-2xl bg-zinc-950 px-5 py-3 font-semibold text-white"
-            >
-              Descargar PDF
+              Imprimir / PDF
             </button>
 
             <button
               type="button"
               onClick={() => updateStatus("pending")}
-              className="rounded-2xl border px-5 py-3 font-semibold"
+              disabled={isUpdatingStatus}
+              className="rounded-2xl border px-5 py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-60"
             >
               Pendiente
             </button>
@@ -307,7 +377,8 @@ if (userError || !user) {
             <button
               type="button"
               onClick={() => updateStatus("accepted")}
-              className="rounded-2xl bg-green-600 px-5 py-3 font-semibold text-white"
+              disabled={isUpdatingStatus}
+              className="rounded-2xl bg-green-600 px-5 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
               Aceptado
             </button>
@@ -315,9 +386,19 @@ if (userError || !user) {
             <button
               type="button"
               onClick={() => updateStatus("rejected")}
-              className="rounded-2xl bg-red-600 px-5 py-3 font-semibold text-white"
+              disabled={isUpdatingStatus}
+              className="rounded-2xl bg-red-600 px-5 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
               Rechazado
+            </button>
+
+            <button
+              type="button"
+              onClick={deleteQuote}
+              disabled={isDeleting}
+              className="rounded-2xl border border-red-200 bg-red-50 px-5 py-3 font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isDeleting ? "Eliminando..." : "Eliminar"}
             </button>
           </div>
         </div>
@@ -328,109 +409,91 @@ if (userError || !user) {
           </div>
         )}
 
-        {editMessage && (
-          <div className="no-print mb-6 rounded-3xl border border-green-200 bg-green-50 p-6 text-green-700">
-            {editMessage}
-          </div>
-        )}
-
-        <section className="print-area print-compact rounded-3xl bg-white p-8 shadow-sm">
-          <div className="print-avoid-break flex flex-col justify-between gap-6 border-b pb-6 md:flex-row">
-            <div className="w-full">
-              <p className="text-sm font-bold uppercase tracking-widest text-zinc-400">
+        <section className="print-area rounded-3xl bg-white p-8 shadow-sm">
+          <div className="flex flex-col justify-between gap-8 border-b pb-8 md:flex-row">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-[0.25em] text-zinc-500">
                 {businessSettings?.company_name || "PresupuestoPro IA"}
               </p>
 
-              <div className="mt-2 text-sm text-zinc-500">
-                {businessSettings?.owner_name && (
-                  <p>{businessSettings.owner_name}</p>
-                )}
-                {businessSettings?.phone && <p>Tel: {businessSettings.phone}</p>}
-                {businessSettings?.email && (
-                  <p>Email: {businessSettings.email}</p>
-                )}
-                {businessSettings?.city && <p>{businessSettings.city}</p>}
-                {businessSettings?.address && <p>{businessSettings.address}</p>}
-              </div>
+              {businessSettings?.owner_name && (
+                <p className="mt-3 text-sm text-zinc-600">
+                  {businessSettings.owner_name}
+                </p>
+              )}
 
-              <p className="mt-3 text-sm text-zinc-500">
+              {businessSettings?.phone && (
+                <p className="text-sm text-zinc-600">
+                  Tel: {businessSettings.phone}
+                </p>
+              )}
+
+              {businessSettings?.email && (
+                <p className="text-sm text-zinc-600">
+                  Email: {businessSettings.email}
+                </p>
+              )}
+
+              {businessSettings?.city && (
+                <p className="text-sm font-semibold text-zinc-600">
+                  {businessSettings.city}
+                </p>
+              )}
+
+              {businessSettings?.address && (
+                <p className="text-sm text-zinc-600">
+                  {businessSettings.address}
+                </p>
+              )}
+
+              <p className="mt-5 text-sm text-zinc-500">
                 Presupuesto generado para servicios de reformas, terminación de
                 obra y limpieza profesional.
               </p>
-
-              {isEditing ? (
-                <input
-                  className="mt-3 w-full rounded-2xl border px-4 py-3 text-2xl font-black"
-                  value={quote.title || ""}
-                  onChange={(event) =>
-                    updateQuoteField("title", event.target.value)
-                  }
-                />
-              ) : (
-                <h2 className="mt-3 text-3xl font-black">
-                  {quote.title || "Presupuesto sin título"}
-                </h2>
-              )}
-
-              <div className="mt-4 grid gap-3 text-sm text-zinc-500 md:grid-cols-3">
-                <p className="break-words">
-                  <strong>Nº presupuesto:</strong>{" "}
-                  <span className="whitespace-nowrap">
-                    {formatQuoteNumber(quote.id, quote.created_at)}
-                  </span>
-                </p>
-
-                <p>
-                  <strong>Fecha:</strong> {formatDate(quote.created_at)}
-                </p>
-
-                <p>
-                  <strong>Validez:</strong> 7 días
-                </p>
-              </div>
-
-              {isEditing ? (
-                <textarea
-                  className="mt-4 w-full rounded-2xl border px-4 py-3 leading-7"
-                  rows={4}
-                  value={quote.description || ""}
-                  onChange={(event) =>
-                    updateQuoteField("description", event.target.value)
-                  }
-                />
-              ) : (
-                <p className="mt-4 max-w-3xl leading-7 text-zinc-600">
-                  {quote.description || "Sin descripción"}
-                </p>
-              )}
             </div>
 
-            <div className="rounded-3xl bg-zinc-50 p-5 md:min-w-60">
+            <div className="text-left md:text-right">
+              <p className="text-sm text-zinc-500">Nº presupuesto</p>
+              <p className="font-bold">{budgetNumber}</p>
+
+              <p className="mt-4 text-sm text-zinc-500">Fecha</p>
+              <p className="font-bold">{formatDate(quote.created_at)}</p>
+
+              <p className="mt-4 text-sm text-zinc-500">Validez</p>
+              <p className="font-bold">7 días</p>
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-8 md:grid-cols-[1.5fr_320px]">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-widest text-zinc-400">
+                {quote.template_name || formatQuoteType(quote.quote_type)}
+              </p>
+
+              <h2 className="mt-3 text-3xl font-black">
+                {quote.title || "Presupuesto sin título"}
+              </h2>
+
+              <p className="mt-4 leading-7 text-zinc-600">
+                {quote.description || "Sin descripción"}
+              </p>
+            </div>
+
+            <div className="rounded-3xl bg-zinc-50 p-6">
               <p className="text-sm text-zinc-500">Total estimado</p>
 
-              {isEditing ? (
-                <input
-                  type="number"
-                  className="mt-2 w-full rounded-2xl border px-4 py-3 text-3xl font-black"
-                  value={quote.estimated_price || 0}
-                  onChange={(event) =>
-                    updateQuoteField("estimated_price", event.target.value)
-                  }
-                />
-              ) : (
-                <p className="mt-2 text-4xl font-black">
-                  {formatCurrency(quote.estimated_price)}
-                </p>
-              )}
+              <p className="mt-2 text-5xl font-black">
+                {formatCurrency(quote.estimated_price)}
+              </p>
 
-              <p className="mt-3 text-sm font-semibold">
+              <p className="mt-3 text-sm font-bold">
                 Estado: {formatStatus(quote.status)}
               </p>
             </div>
           </div>
 
-          <div className="print-avoid-break mt-8 grid gap-6 md:grid-cols-2">
-            <div className="rounded-3xl bg-zinc-50 p-5">
+          <div className="mt-10 grid gap-8 md:grid-cols-2">
+            <div>
               <h3 className="text-xl font-bold">Cliente</h3>
 
               <div className="mt-4 space-y-2 text-sm text-zinc-600">
@@ -438,17 +501,22 @@ if (userError || !user) {
                   <strong>Nombre:</strong>{" "}
                   {quote.clients?.name || "Cliente sin nombre"}
                 </p>
+
                 <p>
                   <strong>Teléfono:</strong>{" "}
                   {quote.clients?.phone || "Sin teléfono"}
                 </p>
+
                 <p>
-                  <strong>Email:</strong> {quote.clients?.email || "Sin email"}
+                  <strong>Email:</strong>{" "}
+                  {quote.clients?.email || "Sin email"}
                 </p>
+
                 <p>
                   <strong>Ciudad:</strong>{" "}
                   {quote.clients?.city || "Sin ciudad"}
                 </p>
+
                 <p>
                   <strong>Dirección:</strong>{" "}
                   {quote.clients?.address || "Sin dirección"}
@@ -456,13 +524,15 @@ if (userError || !user) {
               </div>
             </div>
 
-            <div className="no-print rounded-3xl bg-zinc-50 p-5">
+            <div className="no-print">
               <h3 className="text-xl font-bold">Acciones</h3>
 
               <div className="mt-4 flex flex-col gap-3">
                 <button
                   type="button"
-                  onClick={() => navigator.clipboard.writeText(whatsappMessage)}
+                  onClick={() =>
+                    navigator.clipboard.writeText(whatsappMessage)
+                  }
                   className="rounded-2xl border px-5 py-3 font-semibold"
                 >
                   Copiar mensaje WhatsApp
@@ -483,12 +553,12 @@ if (userError || !user) {
             </div>
           </div>
 
-          <div className="print-avoid-break mt-8">
+          <div className="mt-10">
             <h3 className="text-xl font-bold">Partidas</h3>
 
             <div className="mt-4 space-y-3">
               {quote.quote_items.length === 0 && (
-                <p className="text-zinc-500">No hay partidas guardadas.</p>
+                <p className="text-zinc-500">Sin partidas registradas.</p>
               )}
 
               {quote.quote_items.map((item) => (
@@ -497,53 +567,30 @@ if (userError || !user) {
                   className="grid gap-3 rounded-2xl border p-4 md:grid-cols-[1fr_auto]"
                 >
                   <div>
-                    <p className="font-bold">{item.name}</p>
+                    <p className="font-bold">{item.name || "Partida"}</p>
+
                     <p className="mt-1 text-sm text-zinc-500">
                       {item.description || "Sin descripción"}
                     </p>
                   </div>
 
-                  <p className="font-black">{formatCurrency(item.total)}</p>
+                  <p className="font-black">
+                    {formatCurrency(item.total)}
+                  </p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="no-print mt-8 rounded-3xl bg-zinc-50 p-5">
+          <div className="mt-10">
             <h3 className="text-xl font-bold">Mensaje para WhatsApp</h3>
 
-            {isEditing ? (
-              <textarea
-                className="mt-4 w-full rounded-2xl border px-4 py-3 leading-7"
-                rows={5}
-                value={quote.whatsapp_message || ""}
-                onChange={(event) =>
-                  updateQuoteField("whatsapp_message", event.target.value)
-                }
-              />
-            ) : (
-              <p className="mt-4 whitespace-pre-line leading-7 text-zinc-600">
-                {whatsappMessage}
-              </p>
-            )}
-
-            {isEditing && (
-              <button
-                type="button"
-                onClick={saveEditedQuote}
-                disabled={isSavingEdit}
-                className="mt-4 rounded-2xl bg-zinc-950 px-5 py-3 font-semibold text-white disabled:opacity-60"
-              >
-                {isSavingEdit ? "Guardando cambios..." : "Guardar cambios"}
-              </button>
-            )}
+            <p className="mt-4 whitespace-pre-line leading-7 text-zinc-600">
+              {whatsappMessage}
+            </p>
           </div>
 
-          <p className="mt-6 text-sm text-zinc-500">
-            Nota:{" "}
-            {businessSettings?.legal_note ||
-              "El precio indicado es una estimación basada en la información facilitada. Puede ajustarse tras visita técnica o cambios en el alcance del trabajo."}
-          </p>
+          <p className="mt-8 text-sm text-zinc-500">{legalNote}</p>
         </section>
       </div>
     </main>
