@@ -118,7 +118,7 @@ const plans = [
       "Soporte prioritario",
     ],
     cta: "Solicitar diagnóstico",
-    href: "/register",
+    href: "/diagnostico",
     featured: false,
   },
 ];
