@@ -262,9 +262,10 @@ export default function ClientsPage() {
                     const latestQuote = client.quotes[0];
 
                     return (
-                      <div
+                      <a
                         key={client.id}
-                        className="grid grid-cols-[1.4fr_1fr_1fr_1fr_0.8fr_0.8fr] items-center px-4 py-5"
+                        href={`/clients/${client.id}`}
+                        className="grid grid-cols-[1.4fr_1fr_1fr_1fr_0.8fr_0.8fr] items-center px-4 py-5 transition hover:bg-zinc-50"
                       >
                         <div>
                           <p className="font-bold">
@@ -301,7 +302,7 @@ export default function ClientsPage() {
                         <p className="font-black">
                           {formatCurrency(totalAmount)}
                         </p>
-                      </div>
+                      </a>
                     );
                   })}
                 </div>
