@@ -40,6 +40,27 @@ const problems = [
   "Repites tareas que podrían automatizarse.",
 ];
 
+const steps = [
+  {
+    number: "01",
+    title: "Elige el servicio",
+    description:
+      "Selecciona una plantilla para reforma, limpieza, pintura, mantenimiento u otro servicio profesional.",
+  },
+  {
+    number: "02",
+    title: "Completa los datos",
+    description:
+      "Añade cliente, metros, dificultad, urgencia y detalles del trabajo. La IA usa esa información para generar la propuesta.",
+  },
+  {
+    number: "03",
+    title: "Genera y envía",
+    description:
+      "Obtén un presupuesto profesional con partidas, precio, mensaje para WhatsApp y PDF listo para compartir.",
+  },
+];
+
 const plans = [
   {
     name: "Free",
@@ -96,7 +117,7 @@ const plans = [
       "Flujos de captación y seguimiento",
       "Soporte prioritario",
     ],
-    cta: "Solicitar Premium",
+    cta: "Solicitar diagnóstico",
     href: "/register",
     featured: false,
   },
@@ -105,34 +126,50 @@ const plans = [
 export default function HomePage() {
   return (
     <main className="min-h-screen overflow-x-hidden bg-zinc-950 text-white">
-      <section className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 py-6 sm:px-6 sm:py-8">
-        <header className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-lg font-black">PresupuestoPro IA</p>
-            <p className="mt-1 max-w-xs text-sm leading-6 text-zinc-400 sm:max-w-none">
-              Presupuestos, clientes y automatizaciones para negocios de
-              servicios
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-zinc-950/85 px-5 py-4 backdrop-blur-xl sm:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-5">
+          <a href="/" className="min-w-0">
+            <p className="text-base font-black sm:text-lg">PresupuestoPro IA</p>
+            <p className="hidden text-xs text-zinc-400 sm:block">
+              Presupuestos, CRM y automatizaciones
             </p>
-          </div>
+          </a>
 
-          <div className="grid gap-3 sm:flex sm:flex-row">
+          <nav className="hidden items-center gap-6 text-sm font-semibold text-zinc-300 lg:flex">
+            <a href="#servicios" className="transition hover:text-white">
+              Servicios
+            </a>
+            <a href="#como-funciona" className="transition hover:text-white">
+              Cómo funciona
+            </a>
+            <a href="#planes" className="transition hover:text-white">
+              Planes
+            </a>
+            <a href="#premium" className="transition hover:text-white">
+              Premium
+            </a>
+          </nav>
+
+          <div className="flex shrink-0 items-center gap-3">
             <a
               href="/login"
-              className="rounded-2xl border border-white/20 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-white hover:text-zinc-950"
+              className="hidden rounded-2xl border border-white/20 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white hover:text-zinc-950 sm:inline-block"
             >
               Iniciar sesión
             </a>
 
             <a
               href="/register"
-              className="rounded-2xl bg-white px-5 py-3 text-center text-sm font-semibold text-zinc-950 transition hover:bg-zinc-200"
+              className="rounded-2xl bg-white px-4 py-2.5 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200"
             >
               Crear cuenta
             </a>
           </div>
-        </header>
+        </div>
+      </header>
 
-        <div className="grid flex-1 items-center gap-10 py-12 lg:grid-cols-[1.05fr_0.95fr] lg:py-16">
+      <section className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 py-10 sm:px-6 lg:py-14">
+        <div className="grid flex-1 items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="min-w-0">
             <p className="mb-5 inline-flex max-w-full rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold leading-6 text-zinc-300">
               Para autónomos, emprendedores y pequeños negocios
@@ -147,6 +184,12 @@ export default function HomePage() {
               Crea presupuestos profesionales en minutos, organiza tus clientes,
               envía propuestas por WhatsApp y detecta oportunidades de mejora en
               tu web y procesos comerciales.
+            </p>
+
+            <p className="mt-4 max-w-2xl text-sm font-semibold leading-7 text-zinc-400">
+              Diseñado para negocios de reformas, limpieza, mantenimiento y
+              servicios locales que necesitan responder mejor y cerrar más
+              oportunidades.
             </p>
 
             <div className="mt-8 grid gap-3 sm:flex sm:flex-row">
@@ -296,7 +339,10 @@ export default function HomePage() {
       </section>
 
       {/* SERVICIOS */}
-      <section className="border-t border-white/10 bg-zinc-950 px-5 py-20 sm:px-6">
+      <section
+        id="servicios"
+        className="border-t border-white/10 bg-zinc-950 px-5 py-20 sm:px-6"
+      >
         <div className="mx-auto max-w-6xl">
           <div className="max-w-2xl">
             <p className="text-sm font-semibold text-zinc-400">
@@ -332,8 +378,50 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* COMO FUNCIONA */}
+      <section
+        id="como-funciona"
+        className="border-t border-white/10 bg-zinc-900 px-5 py-20 sm:px-6"
+      >
+        <div className="mx-auto max-w-6xl">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-sm font-semibold text-zinc-400">
+              Cómo funciona
+            </p>
+
+            <h2 className="mt-3 text-balance text-3xl font-black leading-tight sm:text-5xl">
+              De solicitud a presupuesto profesional en pocos pasos.
+            </h2>
+
+            <p className="mt-5 leading-8 text-zinc-300">
+              La plataforma está pensada para que cualquier negocio pueda
+              responder rápido sin perder calidad comercial.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-5 md:grid-cols-3">
+            {steps.map((step) => (
+              <div
+                key={step.number}
+                className="rounded-[2rem] border border-white/10 bg-white/5 p-6"
+              >
+                <p className="text-sm font-black text-zinc-500">
+                  {step.number}
+                </p>
+
+                <h3 className="mt-4 text-2xl font-black">{step.title}</h3>
+
+                <p className="mt-4 leading-7 text-zinc-400">
+                  {step.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* AUDIENCIA */}
-      <section className="border-t border-white/10 bg-zinc-900 px-5 py-20 sm:px-6">
+      <section className="border-t border-white/10 bg-zinc-950 px-5 py-20 sm:px-6">
         <div className="mx-auto max-w-6xl">
           <div className="grid gap-10 lg:grid-cols-[1fr_1fr]">
             <div>
@@ -404,7 +492,7 @@ export default function HomePage() {
       {/* PLANES */}
       <section
         id="planes"
-        className="border-t border-white/10 bg-zinc-950 px-5 py-20 sm:px-6"
+        className="border-t border-white/10 bg-zinc-900 px-5 py-20 sm:px-6"
       >
         <div className="mx-auto max-w-6xl">
           <div className="mx-auto max-w-3xl text-center">
@@ -509,15 +597,18 @@ export default function HomePage() {
             ))}
           </div>
 
-          <div className="mx-auto mt-10 max-w-4xl rounded-[2rem] border border-white/10 bg-white/5 p-6 text-center">
+          <div
+            id="premium"
+            className="mx-auto mt-10 max-w-4xl rounded-[2rem] border border-white/10 bg-white/5 p-6 text-center"
+          >
             <p className="text-sm font-black uppercase tracking-widest text-zinc-400">
               Cómo funciona el setup
             </p>
 
             <p className="mt-4 leading-8 text-zinc-300">
               El setup es un pago único para dejar la plataforma preparada según
-              el negocio: datos de empresa, servicios, plantillas, textos,
-              flujo de presupuestos, automatizaciones iniciales y revisión de
+              el negocio: datos de empresa, servicios, plantillas, textos, flujo
+              de presupuestos, automatizaciones iniciales y revisión de
               oportunidades. En Free no es necesario. En Pro puede contratarse
               si el cliente quiere ayuda. En Premium forma parte de una puesta
               en marcha más personalizada.
