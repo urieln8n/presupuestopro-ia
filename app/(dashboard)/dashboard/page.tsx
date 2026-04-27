@@ -90,6 +90,9 @@ export default function DashboardPage() {
   const [businessSettings, setBusinessSettings] =
     useState<BusinessSettings | null>(null);
 
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [premiumRequestsCount, setPremiumRequestsCount] = useState(0);
+
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -140,6 +143,39 @@ export default function DashboardPage() {
 
       if (settingsError) {
         throw settingsError;
+      }
+
+      const { data: adminData, error: adminError } = await supabase.rpc(
+        "is_admin",
+        {
+          input_user_id: user.id,
+        }
+      );
+
+      if (adminError) {
+        console.error("Error checking admin:", adminError);
+      }
+
+      const userIsAdmin = Boolean(adminData);
+
+      setIsAdmin(userIsAdmin);
+
+      if (userIsAdmin) {
+        const { count, error: premiumRequestsError } = await supabase
+          .from("premium_requests")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "new");
+
+        if (premiumRequestsError) {
+          console.error(
+            "Error loading premium requests:",
+            premiumRequestsError
+          );
+        }
+
+        setPremiumRequestsCount(count || 0);
+      } else {
+        setPremiumRequestsCount(0);
       }
 
       setQuotes((quotesData || []) as unknown as QuoteRow[]);
@@ -227,6 +263,7 @@ export default function DashboardPage() {
   const latestQuotes = quotes.slice(0, 5);
 
   const freePlanQuoteLimit = 5;
+
   const freePlanUsedPercent =
     currentPlan === "free"
       ? Math.min(100, Math.round((stats.total / freePlanQuoteLimit) * 100))
@@ -240,10 +277,11 @@ export default function DashboardPage() {
             <p className="text-sm font-semibold text-zinc-500">
               Panel principal
             </p>
+
             <h1 className="text-4xl font-black">Dashboard</h1>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <a
               href="/quotes"
               className="rounded-2xl border px-5 py-3 text-center font-semibold"
@@ -258,12 +296,14 @@ export default function DashboardPage() {
               Clientes
             </a>
 
-<a
-  href="/premium-requests"
-  className="rounded-2xl border px-5 py-3 text-center font-semibold"
->
-  Solicitudes
-</a>
+            {isAdmin && (
+              <a
+                href="/premium-requests"
+                className="rounded-2xl border px-5 py-3 text-center font-semibold"
+              >
+                Solicitudes
+              </a>
+            )}
 
             <a
               href="/quotes/new"
@@ -341,9 +381,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="rounded-3xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold text-zinc-500">
-              Uso del plan
-            </p>
+            <p className="text-sm font-semibold text-zinc-500">Uso del plan</p>
 
             {currentPlan === "free" ? (
               <>
@@ -395,6 +433,36 @@ export default function DashboardPage() {
           </div>
         </section>
 
+        {isAdmin && (
+          <section className="mb-8 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
+              <div>
+                <p className="text-sm font-semibold text-zinc-500">
+                  Panel administrativo
+                </p>
+
+                <h2 className="mt-1 text-2xl font-black">
+                  Solicitudes Premium
+                </h2>
+
+                <p className="mt-2 text-zinc-500">
+                  Tienes {premiumRequestsCount} solicitud
+                  {premiumRequestsCount === 1 ? "" : "es"} nueva
+                  {premiumRequestsCount === 1 ? "" : "s"} de diagnóstico, setup
+                  o automatización.
+                </p>
+              </div>
+
+              <a
+                href="/premium-requests"
+                className="rounded-2xl bg-zinc-950 px-5 py-3 text-center font-semibold text-white"
+              >
+                Ver solicitudes
+              </a>
+            </div>
+          </section>
+        )}
+
         <div className="grid gap-4 md:grid-cols-5">
           <div className="rounded-3xl bg-white p-6 shadow-sm">
             <p className="text-sm text-zinc-500">Presupuestos</p>
@@ -437,10 +505,13 @@ export default function DashboardPage() {
             <p className="text-sm font-semibold text-zinc-500">
               Análisis por servicio
             </p>
+
             <h2 className="text-xl font-bold">Rendimiento por plantilla</h2>
           </div>
 
-          {isLoading && <p className="text-zinc-500">Cargando estadísticas...</p>}
+          {isLoading && (
+            <p className="text-zinc-500">Cargando estadísticas...</p>
+          )}
 
           {!isLoading && (
             <div className="grid gap-4 md:grid-cols-3">
