@@ -5,13 +5,19 @@ import { supabase } from "@/lib/supabase/client";
 
 type QuoteEditData = {
   id: string;
+  client_id: string | null;
   title: string | null;
   description: string | null;
   estimated_price: number | null;
   whatsapp_message: string | null;
   status: string | null;
   clients: {
+    id: string;
     name: string | null;
+    phone: string | null;
+    email: string | null;
+    city: string | null;
+    address: string | null;
   } | null;
 };
 
@@ -28,6 +34,12 @@ export default function EditQuotePage({
   const [description, setDescription] = useState("");
   const [estimatedPrice, setEstimatedPrice] = useState("");
   const [whatsappMessage, setWhatsappMessage] = useState("");
+
+  const [clientName, setClientName] = useState("");
+  const [clientPhone, setClientPhone] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
+  const [clientCity, setClientCity] = useState("");
+  const [clientAddress, setClientAddress] = useState("");
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -55,13 +67,19 @@ export default function EditQuotePage({
         .select(
           `
           id,
+          client_id,
           title,
           description,
           estimated_price,
           whatsapp_message,
           status,
           clients (
-            name
+            id,
+            name,
+            phone,
+            email,
+            city,
+            address
           )
         `
         )
@@ -76,10 +94,17 @@ export default function EditQuotePage({
       const quoteData = data as unknown as QuoteEditData;
 
       setQuote(quoteData);
+
       setTitle(quoteData.title || "");
       setDescription(quoteData.description || "");
       setEstimatedPrice(String(quoteData.estimated_price || ""));
       setWhatsappMessage(quoteData.whatsapp_message || "");
+
+      setClientName(quoteData.clients?.name || "");
+      setClientPhone(quoteData.clients?.phone || "");
+      setClientEmail(quoteData.clients?.email || "");
+      setClientCity(quoteData.clients?.city || "");
+      setClientAddress(quoteData.clients?.address || "");
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Error cargando presupuesto"
@@ -103,6 +128,10 @@ export default function EditQuotePage({
         throw new Error("El título no puede estar vacío.");
       }
 
+      if (!clientName.trim()) {
+        throw new Error("El nombre del cliente no puede estar vacío.");
+      }
+
       const priceNumber = Number(estimatedPrice);
 
       if (!Number.isFinite(priceNumber) || priceNumber <= 0) {
@@ -119,7 +148,7 @@ export default function EditQuotePage({
         return;
       }
 
-      const { error } = await supabase
+      const { error: quoteError } = await supabase
         .from("quotes")
         .update({
           title: title.trim(),
@@ -130,11 +159,29 @@ export default function EditQuotePage({
         .eq("id", quote.id)
         .eq("user_id", user.id);
 
-      if (error) {
-        throw error;
+      if (quoteError) {
+        throw quoteError;
       }
 
-      setSuccessMessage("Presupuesto actualizado correctamente.");
+      if (quote.client_id) {
+        const { error: clientError } = await supabase
+          .from("clients")
+          .update({
+            name: clientName.trim(),
+            phone: clientPhone.trim(),
+            email: clientEmail.trim(),
+            city: clientCity.trim(),
+            address: clientAddress.trim(),
+          })
+          .eq("id", quote.client_id)
+          .eq("user_id", user.id);
+
+        if (clientError) {
+          throw clientError;
+        }
+      }
+
+      setSuccessMessage("Presupuesto y cliente actualizados correctamente.");
 
       setTimeout(() => {
         window.location.href = `/quotes/${quote.id}`;
@@ -193,7 +240,7 @@ export default function EditQuotePage({
 
   return (
     <main className="min-h-screen bg-zinc-50 p-6">
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-5xl">
         <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
             <a
@@ -212,7 +259,7 @@ export default function EditQuotePage({
             </h1>
 
             <p className="mt-2 text-zinc-500">
-              Cliente: {quote.clients?.name || "Cliente sin nombre"}
+              Edita el presupuesto y los datos del cliente antes de enviarlo.
             </p>
           </div>
 
@@ -236,84 +283,171 @@ export default function EditQuotePage({
           </div>
         )}
 
-        <section className="rounded-3xl bg-white p-6 shadow-sm">
-          <div className="space-y-5">
+        <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+          <section className="rounded-3xl bg-white p-6 shadow-sm">
             <div>
-              <label className="text-sm font-bold text-zinc-700">
-                Título del presupuesto
-              </label>
-
-              <input
-                className="mt-2 w-full rounded-2xl border px-4 py-3"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                placeholder="Título del presupuesto"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-bold text-zinc-700">
-                Descripción / resumen
-              </label>
-
-              <textarea
-                className="mt-2 min-h-36 w-full rounded-2xl border px-4 py-3"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                placeholder="Descripción del presupuesto"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-bold text-zinc-700">
-                Precio estimado
-              </label>
-
-              <input
-                type="number"
-                className="mt-2 w-full rounded-2xl border px-4 py-3"
-                value={estimatedPrice}
-                onChange={(event) => setEstimatedPrice(event.target.value)}
-                placeholder="Precio estimado"
-              />
-
-              <p className="mt-2 text-xs text-zinc-500">
-                Introduce el importe final sin símbolo de euro. Ejemplo: 3349
+              <p className="text-sm font-semibold text-zinc-500">
+                Datos del presupuesto
               </p>
+              <h2 className="mt-1 text-2xl font-black">
+                Información principal
+              </h2>
             </div>
 
-            <div>
-              <label className="text-sm font-bold text-zinc-700">
-                Mensaje para WhatsApp
-              </label>
+            <div className="mt-6 space-y-5">
+              <div>
+                <label className="text-sm font-bold text-zinc-700">
+                  Título del presupuesto
+                </label>
 
-              <textarea
-                className="mt-2 min-h-40 w-full rounded-2xl border px-4 py-3"
-                value={whatsappMessage}
-                onChange={(event) => setWhatsappMessage(event.target.value)}
-                placeholder="Mensaje para WhatsApp"
-              />
+                <input
+                  className="mt-2 w-full rounded-2xl border px-4 py-3"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  placeholder="Título del presupuesto"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-zinc-700">
+                  Descripción / resumen
+                </label>
+
+                <textarea
+                  className="mt-2 min-h-36 w-full rounded-2xl border px-4 py-3"
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  placeholder="Descripción del presupuesto"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-zinc-700">
+                  Precio estimado
+                </label>
+
+                <input
+                  type="number"
+                  className="mt-2 w-full rounded-2xl border px-4 py-3"
+                  value={estimatedPrice}
+                  onChange={(event) => setEstimatedPrice(event.target.value)}
+                  placeholder="Precio estimado"
+                />
+
+                <p className="mt-2 text-xs text-zinc-500">
+                  Introduce el importe final sin símbolo de euro. Ejemplo: 3349
+                </p>
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-zinc-700">
+                  Mensaje para WhatsApp
+                </label>
+
+                <textarea
+                  className="mt-2 min-h-40 w-full rounded-2xl border px-4 py-3"
+                  value={whatsappMessage}
+                  onChange={(event) => setWhatsappMessage(event.target.value)}
+                  placeholder="Mensaje para WhatsApp"
+                />
+              </div>
             </div>
+          </section>
 
-            <div className="flex flex-col gap-3 pt-3 md:flex-row">
-              <button
-                type="button"
-                onClick={saveChanges}
-                disabled={isSaving}
-                className="rounded-2xl bg-zinc-950 px-5 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isSaving ? "Guardando..." : "Guardar cambios"}
-              </button>
+          <aside className="h-fit rounded-3xl bg-white p-6 shadow-sm">
+            <p className="text-sm font-semibold text-zinc-500">
+              Datos del cliente
+            </p>
 
-              <a
-                href={`/quotes/${quote.id}`}
-                className="rounded-2xl border px-5 py-3 text-center font-semibold"
-              >
-                Cancelar
-              </a>
+            <h2 className="mt-1 text-2xl font-black">Cliente</h2>
+
+            <div className="mt-6 space-y-4">
+              <div>
+                <label className="text-sm font-bold text-zinc-700">
+                  Nombre
+                </label>
+
+                <input
+                  className="mt-2 w-full rounded-2xl border px-4 py-3"
+                  value={clientName}
+                  onChange={(event) => setClientName(event.target.value)}
+                  placeholder="Nombre del cliente"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-zinc-700">
+                  Teléfono
+                </label>
+
+                <input
+                  className="mt-2 w-full rounded-2xl border px-4 py-3"
+                  value={clientPhone}
+                  onChange={(event) => setClientPhone(event.target.value)}
+                  placeholder="Teléfono"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-zinc-700">
+                  Email
+                </label>
+
+                <input
+                  type="email"
+                  className="mt-2 w-full rounded-2xl border px-4 py-3"
+                  value={clientEmail}
+                  onChange={(event) => setClientEmail(event.target.value)}
+                  placeholder="Email"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-zinc-700">
+                  Ciudad
+                </label>
+
+                <input
+                  className="mt-2 w-full rounded-2xl border px-4 py-3"
+                  value={clientCity}
+                  onChange={(event) => setClientCity(event.target.value)}
+                  placeholder="Ciudad"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-zinc-700">
+                  Dirección
+                </label>
+
+                <input
+                  className="mt-2 w-full rounded-2xl border px-4 py-3"
+                  value={clientAddress}
+                  onChange={(event) => setClientAddress(event.target.value)}
+                  placeholder="Dirección"
+                />
+              </div>
             </div>
-          </div>
-        </section>
+          </aside>
+        </div>
+
+        <div className="mt-6 flex flex-col gap-3 rounded-3xl bg-white p-6 shadow-sm md:flex-row">
+          <button
+            type="button"
+            onClick={saveChanges}
+            disabled={isSaving}
+            className="rounded-2xl bg-zinc-950 px-5 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSaving ? "Guardando..." : "Guardar cambios"}
+          </button>
+
+          <a
+            href={`/quotes/${quote.id}`}
+            className="rounded-2xl border px-5 py-3 text-center font-semibold"
+          >
+            Cancelar
+          </a>
+        </div>
       </div>
     </main>
   );
