@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { serviceTemplates } from "@/lib/templates/service-templates";
 
 type QuoteRow = {
   id: string;
@@ -9,9 +10,9 @@ type QuoteRow = {
   description: string | null;
   estimated_price: number | null;
   status: string | null;
-  quote_type: string;
+  quote_type: string | null;
   template_id: string | null;
-template_name: string | null;
+  template_name: string | null;
   created_at: string;
   clients: {
     name: string | null;
@@ -25,7 +26,7 @@ function formatCurrency(value: number | null) {
     style: "currency",
     currency: "EUR",
     maximumFractionDigits: 0,
-  }).format(value || 0);
+  }).format(Number(value || 0));
 }
 
 function formatStatus(status: string | null) {
@@ -34,31 +35,38 @@ function formatStatus(status: string | null) {
   return "Pendiente";
 }
 
-function formatQuoteType(type: string) {
+function formatQuoteType(type: string | null) {
   if (type === "reform") return "Reforma";
   if (type === "cleaning") return "Limpieza";
-  return "Combinado";
+  if (type === "combined") return "Combinado";
+  return "Servicio";
 }
 
 export default function QuotesPage() {
   const [quotes, setQuotes] = useState<QuoteRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [selectedTemplateFilter, setSelectedTemplateFilter] = useState("all");
+
+  const filteredQuotes =
+    selectedTemplateFilter === "all"
+      ? quotes
+      : quotes.filter((quote) => quote.template_id === selectedTemplateFilter);
 
   async function loadQuotes() {
     try {
       setIsLoading(true);
       setErrorMessage("");
 
-const {
-  data: { user },
-  error: userError,
-} = await supabase.auth.getUser();
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-if (userError || !user) {
-  window.location.href = "/login";
-  return;
-}
+      if (userError || !user) {
+        window.location.href = "/login";
+        return;
+      }
 
       const { data, error } = await supabase
         .from("quotes")
@@ -90,9 +98,7 @@ if (userError || !user) {
       setQuotes((data || []) as unknown as QuoteRow[]);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Error cargando presupuestos"
+        error instanceof Error ? error.message : "Error cargando presupuestos"
       );
     } finally {
       setIsLoading(false);
@@ -111,86 +117,138 @@ if (userError || !user) {
             <p className="text-sm font-semibold text-zinc-500">
               Presupuestos guardados
             </p>
+
             <h1 className="text-4xl font-black">Historial</h1>
           </div>
 
-          <a
-            href="/quotes/new"
-            className="rounded-2xl bg-zinc-950 px-5 py-3 text-center font-semibold text-white"
-          >
-            Crear presupuesto
-          </a>
+          <div className="flex gap-3">
+            <a
+              href="/dashboard"
+              className="rounded-2xl border px-5 py-3 text-center font-semibold"
+            >
+              Volver al dashboard
+            </a>
+
+            <a
+              href="/quotes/new"
+              className="rounded-2xl bg-zinc-950 px-5 py-3 text-center font-semibold text-white"
+            >
+              Crear presupuesto
+            </a>
+          </div>
         </div>
 
-        {isLoading && (
-          <div className="rounded-3xl bg-white p-6 shadow-sm">
-            <p className="text-zinc-500">Cargando presupuestos...</p>
-          </div>
-        )}
+        <div className="mb-6 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => setSelectedTemplateFilter("all")}
+            className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+              selectedTemplateFilter === "all"
+                ? "bg-zinc-950 text-white"
+                : "border bg-white text-zinc-700 hover:bg-zinc-50"
+            }`}
+          >
+            Todos
+          </button>
+
+          {serviceTemplates.map((template) => (
+            <button
+              key={template.id}
+              type="button"
+              onClick={() => setSelectedTemplateFilter(template.id)}
+              className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+                selectedTemplateFilter === template.id
+                  ? "bg-zinc-950 text-white"
+                  : "border bg-white text-zinc-700 hover:bg-zinc-50"
+              }`}
+            >
+              {template.name}
+            </button>
+          ))}
+        </div>
 
         {errorMessage && (
-          <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-red-700">
+          <div className="mb-6 rounded-3xl border border-red-200 bg-red-50 p-6 text-red-700">
             {errorMessage}
           </div>
         )}
 
-        {!isLoading && !errorMessage && quotes.length === 0 && (
-          <div className="rounded-3xl bg-white p-6 shadow-sm">
+        <section className="rounded-3xl bg-white p-6 shadow-sm">
+          {isLoading && <p className="text-zinc-500">Cargando...</p>}
+
+          {!isLoading && filteredQuotes.length === 0 && (
             <p className="text-zinc-500">
-              Todavía no hay presupuestos guardados.
+              {selectedTemplateFilter === "all"
+                ? "Todavía no has creado ningún presupuesto."
+                : "No hay presupuestos para este filtro."}
             </p>
-          </div>
-        )}
+          )}
 
-        {!isLoading && !errorMessage && quotes.length > 0 && (
-          <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
-            <div className="hidden grid-cols-[1.4fr_1fr_0.7fr_0.7fr_0.7fr] gap-4 border-b bg-zinc-100 p-4 text-sm font-bold text-zinc-600 md:grid">
-              <p>Presupuesto</p>
-              <p>Cliente</p>
-              <p>Tipo</p>
-              <p>Estado</p>
-              <p>Importe</p>
+          {!isLoading && filteredQuotes.length > 0 && (
+            <div className="overflow-x-auto">
+              <div className="min-w-[900px]">
+                <div className="grid grid-cols-[2fr_1.3fr_1.2fr_1fr_1fr] border-b px-4 py-3 text-sm font-bold text-zinc-500">
+                  <p>Presupuesto</p>
+                  <p>Cliente</p>
+                  <p>Servicio</p>
+                  <p>Estado</p>
+                  <p>Importe</p>
+                </div>
+
+                <div className="divide-y">
+                  {filteredQuotes.map((quote) => (
+                    <a
+                      key={quote.id}
+                      href={`/quotes/${quote.id}`}
+                      className="grid grid-cols-[2fr_1.3fr_1.2fr_1fr_1fr] items-center px-4 py-5 transition hover:bg-zinc-50"
+                    >
+                      <div>
+                        <p className="font-bold">
+                          {quote.title || "Presupuesto sin título"}
+                        </p>
+
+                        <p className="mt-1 line-clamp-1 text-sm text-zinc-500">
+                          {quote.description || "Sin descripción"}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="font-semibold">
+                          {quote.clients?.name || "Cliente sin nombre"}
+                        </p>
+
+                        <p className="mt-1 text-sm text-zinc-500">
+                          {quote.clients?.city || "Sin ciudad"}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="font-semibold">
+                          {quote.template_name ||
+                            formatQuoteType(quote.quote_type)}
+                        </p>
+
+                        {quote.template_name && (
+                          <p className="mt-1 text-xs text-zinc-400">
+                            {formatQuoteType(quote.quote_type)}
+                          </p>
+                        )}
+                      </div>
+
+                      <p className="font-semibold">
+                        {formatStatus(quote.status)}
+                      </p>
+
+                      <p className="font-black">
+                        {formatCurrency(quote.estimated_price)}
+                      </p>
+                    </a>
+                  ))}
+                </div>
+              </div>
             </div>
-
-            {quotes.map((quote) => (
-              <a
-                key={quote.id}
-                href={`/quotes/${quote.id}`}
-                className="grid gap-3 border-b p-4 transition last:border-b-0 hover:bg-zinc-50 md:grid-cols-[1.4fr_1fr_0.7fr_0.7fr_0.7fr] md:items-center"
-              >
-                <div>
-                  <p className="font-bold">
-                    {quote.title || "Presupuesto sin título"}
-                  </p>
-                  <p className="mt-1 line-clamp-1 text-sm text-zinc-500">
-                    {quote.description || "Sin descripción"}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="font-semibold">
-                    {quote.clients?.name || "Cliente sin nombre"}
-                  </p>
-                  <p className="text-sm text-zinc-500">
-                    {quote.clients?.city || "Sin ciudad"}
-                  </p>
-                </div>
-
-                <p className="text-sm font-semibold">
-                  {quote.template_name || formatQuoteType(quote.quote_type)}
-                </p>
-
-                <p className="text-sm font-semibold">
-                  {formatStatus(quote.status)}
-                </p>
-
-                <p className="font-black">
-                  {formatCurrency(quote.estimated_price)}
-                </p>
-              </a>
-            ))}
-          </div>
-        )}
+          )}
+        </section>
       </div>
     </main>
   );
