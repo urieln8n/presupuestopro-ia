@@ -357,6 +357,13 @@ export default function QuoteDetailPage({
           </div>
 
           <div className="flex flex-wrap gap-3">
+            <a
+  href={`/quotes/${quote.id}/edit`}
+  className="rounded-2xl border px-5 py-3 font-semibold"
+>
+  Editar
+</a>
+
             <button
               type="button"
               onClick={() => window.print()}
