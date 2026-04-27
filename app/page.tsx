@@ -40,6 +40,63 @@ const problems = [
   "Repites tareas que podrían automatizarse.",
 ];
 
+const plans = [
+  {
+    name: "Free",
+    price: "0 €",
+    subtitle: "Para probar la herramienta",
+    description:
+      "Ideal para empezar, validar el flujo y crear tus primeros presupuestos profesionales.",
+    features: [
+      "Presupuestos limitados",
+      "Plantillas básicas",
+      "Historial de presupuestos",
+      "Clientes guardados",
+      "Mensaje para WhatsApp",
+    ],
+    cta: "Crear cuenta gratis",
+    href: "/register",
+    featured: false,
+  },
+  {
+    name: "Pro",
+    price: "19 €/mes",
+    subtitle: "Para autónomos y negocios activos",
+    description:
+      "El plan recomendado para trabajar con clientes reales, ahorrar tiempo y enviar propuestas profesionales.",
+    features: [
+      "Presupuestos con IA",
+      "Presupuestos ilimitados",
+      "CRM de clientes",
+      "PDF profesional",
+      "WhatsApp integrado",
+      "Edición de presupuesto, cliente y partidas",
+      "Dashboard comercial",
+    ],
+    cta: "Empezar con Pro",
+    href: "/register",
+    featured: true,
+  },
+  {
+    name: "Premium",
+    price: "Desde 79 €/mes",
+    subtitle: "Para negocios que quieren automatizar",
+    description:
+      "Para empresas que quieren acompañamiento, automatizaciones comerciales y mejora de su sistema digital.",
+    features: [
+      "Todo lo incluido en Pro",
+      "Auditoría web y operativa",
+      "Automatizaciones comerciales",
+      "Configuración personalizada",
+      "Flujos de captación y seguimiento",
+      "Soporte prioritario",
+    ],
+    cta: "Solicitar Premium",
+    href: "/register",
+    featured: false,
+  },
+];
+
 export default function HomePage() {
   return (
     <main className="min-h-screen overflow-x-hidden bg-zinc-950 text-white">
@@ -48,7 +105,8 @@ export default function HomePage() {
           <div className="min-w-0">
             <p className="text-lg font-black">PresupuestoPro IA</p>
             <p className="mt-1 max-w-xs text-sm leading-6 text-zinc-400 sm:max-w-none">
-              Presupuestos, clientes y automatizaciones para negocios de servicios
+              Presupuestos, clientes y automatizaciones para negocios de
+              servicios
             </p>
           </div>
 
@@ -76,7 +134,8 @@ export default function HomePage() {
             </p>
 
             <h1 className="max-w-4xl text-balance text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-              Presupuestos, clientes y automatizaciones con IA para vender más rápido.
+              Presupuestos, clientes y automatizaciones con IA para vender más
+              rápido.
             </h1>
 
             <p className="mt-6 max-w-2xl text-base leading-8 text-zinc-300 sm:text-lg">
@@ -94,10 +153,10 @@ export default function HomePage() {
               </a>
 
               <a
-                href="/login"
+                href="#planes"
                 className="rounded-2xl border border-white/20 px-6 py-4 text-center font-bold text-white transition hover:bg-white hover:text-zinc-950"
               >
-                Ya tengo cuenta
+                Ver planes
               </a>
             </div>
 
@@ -203,7 +262,8 @@ export default function HomePage() {
               </p>
 
               <h2 className="mt-3 text-balance text-3xl font-black leading-tight sm:text-4xl">
-                Muchos negocios pierden clientes por responder tarde o trabajar desordenados.
+                Muchos negocios pierden clientes por responder tarde o trabajar
+                desordenados.
               </h2>
 
               <p className="mt-5 leading-8 text-zinc-300">
@@ -274,7 +334,8 @@ export default function HomePage() {
               </p>
 
               <h2 className="mt-3 text-balance text-3xl font-black leading-tight sm:text-4xl">
-                Ideal para negocios que venden servicios y necesitan responder rápido.
+                Ideal para negocios que venden servicios y necesitan responder
+                rápido.
               </h2>
 
               <p className="mt-5 leading-8 text-zinc-300">
@@ -332,6 +393,110 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section
+        id="planes"
+        className="border-t border-white/10 bg-zinc-950 px-5 py-20 sm:px-6"
+      >
+        <div className="mx-auto max-w-6xl">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-sm font-semibold text-zinc-400">
+              Planes y precios
+            </p>
+
+            <h2 className="mt-3 text-balance text-3xl font-black leading-tight sm:text-5xl">
+              Empieza gratis y escala cuando tu negocio lo necesite.
+            </h2>
+
+            <p className="mt-5 leading-8 text-zinc-300">
+              PresupuestoPro IA está pensado para crecer contigo: primero
+              presupuestos, después clientes, automatizaciones y mejora de tu
+              sistema comercial.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-5 lg:grid-cols-3">
+            {plans.map((plan) => (
+              <div
+                key={plan.name}
+                className={`relative rounded-[2rem] p-6 ${
+                  plan.featured
+                    ? "bg-white text-zinc-950 shadow-2xl"
+                    : "border border-white/10 bg-white/5 text-white"
+                }`}
+              >
+                {plan.featured && (
+                  <div className="mb-5 inline-flex rounded-full bg-zinc-950 px-4 py-2 text-xs font-black uppercase tracking-widest text-white">
+                    Recomendado
+                  </div>
+                )}
+
+                <p
+                  className={`text-sm font-semibold ${
+                    plan.featured ? "text-zinc-500" : "text-zinc-400"
+                  }`}
+                >
+                  {plan.subtitle}
+                </p>
+
+                <h3 className="mt-2 text-3xl font-black">{plan.name}</h3>
+
+                <p className="mt-4 text-4xl font-black">{plan.price}</p>
+
+                <p
+                  className={`mt-4 leading-7 ${
+                    plan.featured ? "text-zinc-600" : "text-zinc-400"
+                  }`}
+                >
+                  {plan.description}
+                </p>
+
+                <div className="mt-6 space-y-3">
+                  {plan.features.map((feature) => (
+                    <div key={feature} className="flex gap-3">
+                      <span
+                        className={`mt-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-black ${
+                          plan.featured
+                            ? "bg-zinc-950 text-white"
+                            : "bg-white/10 text-white"
+                        }`}
+                      >
+                        ✓
+                      </span>
+
+                      <p
+                        className={`text-sm leading-6 ${
+                          plan.featured ? "text-zinc-700" : "text-zinc-300"
+                        }`}
+                      >
+                        {feature}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <a
+                  href={plan.href}
+                  className={`mt-8 block rounded-2xl px-5 py-4 text-center font-bold ${
+                    plan.featured
+                      ? "bg-zinc-950 text-white"
+                      : "border border-white/20 text-white transition hover:bg-white hover:text-zinc-950"
+                  }`}
+                >
+                  {plan.cta}
+                </a>
+              </div>
+            ))}
+          </div>
+
+          <p className="mx-auto mt-8 max-w-3xl text-center text-sm leading-7 text-zinc-500">
+            Los precios pueden ajustarse según uso, país, volumen de
+            presupuestos o configuración personalizada. El plan Premium puede
+            incluir implementación, automatizaciones y auditoría según necesidad
+            del negocio.
+          </p>
+        </div>
+      </section>
+
       <section className="border-t border-white/10 bg-zinc-950 px-5 py-20 sm:px-6">
         <div className="mx-auto max-w-6xl">
           <div className="rounded-[2rem] bg-white p-6 text-zinc-950 sm:p-8 md:flex md:items-center md:justify-between md:p-10">
@@ -359,10 +524,10 @@ export default function HomePage() {
               </a>
 
               <a
-                href="/login"
+                href="#planes"
                 className="rounded-2xl border px-6 py-4 text-center font-bold"
               >
-                Iniciar sesión
+                Ver planes
               </a>
             </div>
           </div>
